@@ -1,0 +1,30 @@
+{
+  "name": "serverless-plugin-include-dependencies",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=4.0"
+  },
+  "description": "A Serverless plugin that reduces your packaged function size",
+  "author": "Doug Moscrop <doug.moscrop@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dougmoscrop/serverless-plugin-include-dependencies"
+  },
+  "keywords": [
+    "serverless",
+    "serverless plugins"
+  ],
+  "main": "include-dependencies.js",
+  "scripts": {
+    "test": "echo \"No tests yet\"",
+    "posttest": "eslint ."
+  },
+  "devDependencies": {
+    "eslint": "3.9.1"
+  },
+  "dependencies": {
+    "dependency-tree": "5.7.1",
+    "lodash": "4.16.6"
+  }
+}
