@@ -4,7 +4,7 @@ const _ = require('lodash');
 const path = require('path');
 const dependencies = require('dependency-tree');
 
-module.exports = class includeDependencies {
+module.exports = class IncludeDependencies {
 
   constructor(serverless) {
     this.serverless = serverless;
@@ -49,8 +49,24 @@ module.exports = class includeDependencies {
 
   include(target, paths) {
     const servicePath = this.serverless.config.servicePath;
-    target.exclude = _.union(target.exclude, paths.map(p => `!${path.relative(servicePath, p)}`
-    ));
+    const modules = {};
+
+    paths.forEach(p => {
+      const relativePath = path.relative(servicePath, p);
+
+      if (relativePath.match(/^node_modules[/\\]/)) {
+        const modulePath = this.getModulePath(relativePath.replace(/^node_modules[/\\]/, ''));
+        const glob = path.join('node_modules', modulePath, '**');
+        modules[`!${glob}`] = true;
+      }
+    });
+
+    target.exclude = _.union(target.exclude, Object.keys(modules));
+  }
+
+  getModulePath(relativePath) {
+    // this is a shitty attempt at cross-platform (i.e. Windows) path support
+    return relativePath.split(/[/\\]/)[0];
   }
 
 };
