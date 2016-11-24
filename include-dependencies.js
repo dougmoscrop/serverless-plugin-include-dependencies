@@ -1,12 +1,16 @@
  'use strict';
 
 const _ = require('lodash');
+const semver = require('semver');
 const path = require('path');
 const dependencies = require('dependency-tree');
 
 module.exports = class IncludeDependencies {
 
   constructor(serverless) {
+    if (!semver.satisfies(serverless.version, '>= 1.2')) {
+      throw new Error('serverless-plugin-include-dependencies requires serverless 1.2 or higher!');
+    }
     this.serverless = serverless;
     this.hooks = {
       'before:deploy:function:deploy': () => this.package(),
@@ -22,6 +26,7 @@ module.exports = class IncludeDependencies {
       const cache = {};
 
       service.package = service.package || {};
+      service.package.exclude = _.union(service.package.exclude, ['node_modules/**']);
 
       Object.keys(service.functions).forEach(functionName => {
         const functionObject = service.functions[functionName];
