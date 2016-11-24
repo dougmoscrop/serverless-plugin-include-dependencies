@@ -1,6 +1,6 @@
 {
   "name": "serverless-plugin-include-dependencies",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "engines": {
     "node": ">=4.0"
   },

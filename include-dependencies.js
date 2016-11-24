@@ -57,11 +57,11 @@ module.exports = class IncludeDependencies {
       if (relativePath.match(/^node_modules[/\\]/)) {
         const modulePath = this.getModulePath(relativePath.replace(/^node_modules[/\\]/, ''));
         const glob = path.join('node_modules', modulePath, '**');
-        modules[`!${glob}`] = true;
+        modules[`${glob}`] = true;
       }
     });
 
-    target.exclude = _.union(target.exclude, Object.keys(modules));
+    target.include = _.union(target.include, Object.keys(modules));
   }
 
   getModulePath(relativePath) {
