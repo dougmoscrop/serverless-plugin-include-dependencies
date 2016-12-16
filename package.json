@@ -1,6 +1,6 @@
 {
   "name": "serverless-plugin-include-dependencies",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "engines": {
     "node": ">=4.0"
   },
@@ -17,15 +17,30 @@
   ],
   "main": "include-dependencies.js",
   "scripts": {
-    "test": "echo \"No tests yet\"",
+    "test": "nyc --all ava",
     "posttest": "eslint ."
   },
   "devDependencies": {
-    "eslint": "3.9.1"
+    "ava": "0.17.0",
+    "eslint": "3.12.2",
+    "nyc": "^10.0.0",
+    "sinon": "^1.17.6"
   },
   "dependencies": {
-    "dependency-tree": "5.7.1",
-    "lodash": "4.16.6",
-    "semver": "^5.3.0"
+    "find-root": "1.0.0",
+    "lodash": "4.17.2",
+    "precinct": "3.5.0",
+    "resolve": "1.2.0",
+    "semver": "5.3.0"
+  },
+  "nyc": {
+    "reporter": [
+      "lcov",
+      "text-summary"
+    ],
+    "exclude": [
+      "__tests__",
+      "coverage"
+    ]
   }
 }

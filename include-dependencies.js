@@ -1,49 +1,54 @@
- 'use strict';
+'use strict';
+
+const path = require('path');
 
 const _ = require('lodash');
 const semver = require('semver');
-const path = require('path');
-const dependencies = require('dependency-tree');
+
+const getDependencyList = require('./get-dependency-list');
 
 module.exports = class IncludeDependencies {
 
-  constructor(serverless) {
+  constructor(serverless, options) {
     if (!semver.satisfies(serverless.version, '>= 1.2')) {
       throw new Error('serverless-plugin-include-dependencies requires serverless 1.2 or higher!');
     }
     this.serverless = serverless;
+    this.options = options;
     this.hooks = {
-      'before:deploy:function:deploy': () => this.package(),
-      'before:deploy:createDeploymentArtifacts': () => this.package()
+      'before:deploy:function:deploy': this.functionDeploy.bind(this),
+      'before:deploy:createDeploymentArtifacts': this.createDeploymentArtifacts.bind(this)
     };
   }
 
-  package() {
+  functionDeploy() {
+    return this.processFunction(this.options.function);
+  }
+
+  createDeploymentArtifacts() {
+    const service = this.serverless.service;
+    if (typeof service.functions === 'object') {
+      Object.keys(service.functions).forEach(functionName => {
+        this.processFunction(functionName);
+      });
+    }
+  }
+
+  processFunction(functionName) {
     const service = this.serverless.service;
 
-    if (typeof service.functions === 'object') {
-      const servicePath = this.serverless.config.servicePath;
-      const cache = {};
+    service.package = service.package || {};
+    service.package.exclude = _.union(service.package.exclude, ['node_modules/**']);
 
-      service.package = service.package || {};
-      service.package.exclude = _.union(service.package.exclude, ['node_modules/**']);
+    const functionObject = service.functions[functionName];
+    const fileName = this.getHandlerFilename(functionObject.handler)
+    const list = this.getDependencies(fileName, this.serverless);
 
-      Object.keys(service.functions).forEach(functionName => {
-        const functionObject = service.functions[functionName];
-        const list = dependencies.toList({
-          filename: this.getHandlerFilename(functionObject.handler),
-          directory: servicePath,
-          visited: cache,
-          filter: path => path.indexOf('aws-sdk') === -1,
-        });
-        if (service.package && service.package.individually) {
-          functionObject.package = functionObject.package || {};
-          this.include(functionObject.package, list);
-        } else {
-          service.package = service.package || {};
-          this.include(service.package, list);
-        }
-      });
+    if (service.package && service.package.individually) {
+      functionObject.package = functionObject.package || {};
+      this.include(functionObject.package, list);
+    } else {
+      this.include(service.package, list);
     }
   }
 
@@ -52,26 +57,14 @@ module.exports = class IncludeDependencies {
     return require.resolve((path.join(this.serverless.config.servicePath, handlerPath)));
   }
 
-  include(target, paths) {
-    const servicePath = this.serverless.config.servicePath;
-    const modules = {};
-
-    paths.forEach(p => {
-      const relativePath = path.relative(servicePath, p);
-
-      if (relativePath.match(/^node_modules[/\\]/)) {
-        const modulePath = this.getModulePath(relativePath.replace(/^node_modules[/\\]/, ''));
-        const glob = path.join('node_modules', modulePath, '**');
-        modules[`${glob}`] = true;
-      }
-    });
-
-    target.include = _.union(target.include, Object.keys(modules));
+  getDependencies(fileName) {
+    return getDependencyList(fileName, this.serverless);
   }
 
-  getModulePath(relativePath) {
-    // this is a shitty attempt at cross-platform (i.e. Windows) path support
-    return relativePath.split(/[/\\]/)[0];
+  include(target, paths) {
+    const servicePath = this.serverless.config.servicePath;
+
+    target.include = _.union(target.include, paths.map(p => path.relative(servicePath, p)));
   }
 
 };
