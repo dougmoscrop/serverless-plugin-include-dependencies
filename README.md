@@ -2,7 +2,7 @@
 
 This is a Serverless plugin that should make your deployed functions smaller.
 
-It does this by enabling you to add your `node_modules` folder to the `exclude` list, then it individually adds each *actual file* that your handler depends on.
+It does this by enabling you to add your `node_modules` folder to the `exclude` list, then it individually adds each module that your handler depends on.
 
 ## Usage Example
 
