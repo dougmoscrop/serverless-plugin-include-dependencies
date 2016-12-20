@@ -12,7 +12,7 @@ service: sample
 
 package:
   exclude:
-    - node_modules/** # add this yourself
+    - node_modules/** # no need to add this yourself, this plugin does it for you
 
 plugins:
   - serverless-plugin-include-dependencies
@@ -30,3 +30,4 @@ For even smaller function packages, you can also set:
 package:
   individually: true
 ```
+But be warned: Smaller individual functions can still mean a larger overall package. (10 functions that are 3 MB each is more net data tranfer and storage than 1 function that is 6 MB)
