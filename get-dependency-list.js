@@ -7,6 +7,7 @@ const resolve = require('resolve');
 const findRoot = require('find-root');
 
 module.exports = function(filename, serverless) {
+  const base = path.dirname(filename);
   const dependencies = {};
 
   const modules = {};
@@ -23,19 +24,20 @@ module.exports = function(filename, serverless) {
       const abs = resolve.sync(name, {
         basedir: path.dirname(current)
       });
+      const rel = path.relative(base, abs);
 
-      // relative file, further processing
-      if (name.match(`^\.+${path.sep}+`) && path.extname(abs) === '.js') {
-        filesToProcess.push(abs);
-      } else {
-        if (resolve.isCore(name)) {
-          return;
-        }
-
+      // found a module dependency
+      if (rel.match('node_modules')) {
         const directory = path.dirname(abs);
         const root = findRoot(directory);
 
         modules[root] = true;
+      } else {
+        if (resolve.isCore(name)) {
+          return;
+        }
+        // found a local file, continue to run precinct on it
+        filesToProcess.push(abs);
       }
     });
 
