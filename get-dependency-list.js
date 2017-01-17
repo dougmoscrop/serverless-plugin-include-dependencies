@@ -57,20 +57,7 @@ module.exports = function(filename, serverless) {
 
     if (pkg.dependencies) {
       Object.keys(pkg.dependencies).forEach(dependency => {
-        const abs = resolve.sync(dependency, {
-          basedir: current
-        });
-
-        const directory = path.dirname(abs);
-        const root = findRoot(directory);
-
-        moduleToProcess.push(root);
-      });
-    }
-
-    if (pkg.optionalDependencies) {
-      Object.keys(pkg.optionalDependencies).forEach(dependency => {
-        try {
+        if (dependency !== 'aws-sdk') {
           const abs = resolve.sync(dependency, {
             basedir: current
           });
@@ -79,8 +66,25 @@ module.exports = function(filename, serverless) {
           const root = findRoot(directory);
 
           moduleToProcess.push(root);
-        } catch (e) {
-          serverless.cli.log(`[serverless-plugin-include-dependencies]: missing optional dependency: ${dependency}`);
+        }
+      });
+    }
+
+    if (pkg.optionalDependencies) {
+      Object.keys(pkg.optionalDependencies).forEach(dependency => {
+        if (dependency !== 'aws-sdk') {
+          try {
+            const abs = resolve.sync(dependency, {
+              basedir: current
+            });
+
+            const directory = path.dirname(abs);
+            const root = findRoot(directory);
+
+            moduleToProcess.push(root);
+          } catch (e) {
+            serverless.cli.log(`[serverless-plugin-include-dependencies]: missing optional dependency: ${dependency}`);
+          }
         }
       });
     }
