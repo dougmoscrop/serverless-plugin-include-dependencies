@@ -17,6 +17,10 @@ package:
 plugins:
   - serverless-plugin-include-dependencies
 
+custom: 
+  serverless-plugin-include-dependencies:
+    'package-name': 'main.js'
+
 functions:
   foo:
     handler: src/handler/foo.handler

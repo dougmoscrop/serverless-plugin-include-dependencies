@@ -15,6 +15,13 @@ module.exports = class IncludeDependencies {
     }
     this.serverless = serverless;
     this.options = options;
+
+    this.filterDeps = {};
+    if (serverless.service.custom &&
+      serverless.service.custom['serverless-plugin-include-dependencies']) {
+        this.filterDeps = serverless.service.custom['serverless-plugin-include-dependencies'];
+    }
+
     this.hooks = {
       'before:deploy:function:deploy': this.functionDeploy.bind(this),
       'before:deploy:createDeploymentArtifacts': this.createDeploymentArtifacts.bind(this)
@@ -58,7 +65,7 @@ module.exports = class IncludeDependencies {
   }
 
   getDependencies(fileName) {
-    return getDependencyList(fileName, this.serverless);
+    return getDependencyList(fileName, this.serverless, this.filterDeps);
   }
 
   include(target, paths) {
