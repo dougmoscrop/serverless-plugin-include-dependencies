@@ -176,3 +176,63 @@ test('getDependencies should return an array', t => {
   t.true(Array.isArray(dependencies));
   t.true(dependencies.length > 0);
 });
+
+test('dependencies with no main file should fail', t => {
+  t.throws(() => {
+    const instance = createTestInstance();
+    const directory = path.join(__dirname, 'fixtures');
+    const file = path.join(directory, 'thing-2.js');
+    instance.getDependencies(file, directory);
+  });
+});
+
+test('package with no main file should pass when filtered', t => {
+    const instance = createTestInstance({
+      service: {
+        custom: {
+          'serverless-plugin-include-dependencies': {
+            'custom-package': 'custom.js'
+          }
+        }
+      }
+    });
+    const directory = path.join(__dirname, 'fixtures');
+    const file = path.join(directory, 'custom-direct-dependency.js');
+    const dependencies = instance.getDependencies(file, directory);
+    t.true(Array.isArray(dependencies));
+    t.true(dependencies.length > 0);
+})
+
+test('dependencies with no main file should pass when filtered', t => {
+    const instance = createTestInstance({
+      service: {
+        custom: {
+          'serverless-plugin-include-dependencies': {
+            'custom-package': 'custom.js'
+          }
+        }
+      }
+    });
+    const directory = path.join(__dirname, 'fixtures');
+    const file = path.join(directory, 'custom-dependency.js');
+    const dependencies = instance.getDependencies(file, directory);
+    t.true(Array.isArray(dependencies));
+    t.true(dependencies.length > 0);
+})
+
+test('optional dependencies with no main file should pass when filtered', t => {
+    const instance = createTestInstance({
+      service: {
+        custom: {
+          'serverless-plugin-include-dependencies': {
+            'custom-package': 'custom.js'
+          }
+        }
+      }
+    });
+    const directory = path.join(__dirname, 'fixtures');
+    const file = path.join(directory, 'custom-optional-dependency.js');
+    const dependencies = instance.getDependencies(file, directory);
+    t.true(Array.isArray(dependencies));
+    t.true(dependencies.length > 0);
+})
