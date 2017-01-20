@@ -6,12 +6,21 @@ const precinct = require('precinct');
 const resolve = require('resolve');
 const findRoot = require('find-root');
 
-module.exports = function(filename, serverless) {
+module.exports = function(filename, serverless, filterDeps) {
   const base = path.dirname(filename);
   const dependencies = {};
 
   const modules = {};
   const filesToProcess = [filename];
+
+  const packageFilter = function(pkg) {
+      if (filterDeps[pkg.name]) {
+        return {
+          main: filterDeps[pkg.name]
+        };
+      }
+      return pkg;
+    }
 
   while (filesToProcess.length) {
     const current = filesToProcess.pop();
@@ -22,7 +31,8 @@ module.exports = function(filename, serverless) {
 
     precinct.paperwork(current).forEach(name => {
       const abs = resolve.sync(name, {
-        basedir: path.dirname(current)
+        basedir: path.dirname(current),
+        packageFilter
       });
       const rel = path.relative(base, abs);
 
@@ -58,7 +68,8 @@ module.exports = function(filename, serverless) {
     if (pkg.dependencies) {
       Object.keys(pkg.dependencies).forEach(dependency => {
         const abs = resolve.sync(dependency, {
-          basedir: current
+          basedir: current,
+          packageFilter
         });
 
         const directory = path.dirname(abs);
@@ -72,7 +83,8 @@ module.exports = function(filename, serverless) {
       Object.keys(pkg.optionalDependencies).forEach(dependency => {
         try {
           const abs = resolve.sync(dependency, {
-            basedir: current
+            basedir: current,
+            packageFilter
           });
 
           const directory = path.dirname(abs);
