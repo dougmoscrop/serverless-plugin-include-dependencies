@@ -41,6 +41,16 @@ module.exports = class IncludeDependencies {
     service.package.exclude = _.union(service.package.exclude, ['node_modules/**']);
 
     const functionObject = service.functions[functionName];
+    const runtime = this.getFunctionRuntime(functionObject);
+
+    if (runtime.match(/nodejs*/)) {
+      this.processNodeFunction(functionObject);
+    }
+  }
+
+  processNodeFunction(functionObject) {
+    const service = this.serverless.service;
+
     const fileName = this.getHandlerFilename(functionObject.handler)
     const list = this.getDependencies(fileName, this.serverless);
 
@@ -50,6 +60,15 @@ module.exports = class IncludeDependencies {
     } else {
       this.include(service.package, list);
     }
+  }
+
+  getFunctionRuntime(functionObject) {
+    const service = this.serverless.service;
+
+    const functionRuntime = functionObject.runtime;
+    const providerRuntime = service.provider && service.provider.runtime;
+
+    return functionRuntime || providerRuntime || 'nodejs4.3';
   }
 
   getHandlerFilename(handler) {

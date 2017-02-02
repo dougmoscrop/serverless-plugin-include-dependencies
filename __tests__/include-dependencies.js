@@ -176,3 +176,40 @@ test('getDependencies should return an array', t => {
   t.true(Array.isArray(dependencies));
   t.true(dependencies.length > 0);
 });
+
+test('processFunction should handle different runtimes', t => {
+  const instance = createTestInstance({
+    service: {
+      provider: {
+        runtime: 'python23',
+      },
+      package: {
+        individually: true,
+        include: ['.something']
+      },
+      functions: {
+        a: {},
+        b: {
+          runtime: 'nodejs43'
+        },
+        c: {
+          runtime: 'nodejs62'
+        }
+      }
+    }
+  });
+
+  const processNode = sinon.stub(instance, 'processNodeFunction', () => true);
+
+  instance.processFunction('a');
+
+  t.false(processNode.called);
+
+  instance.processFunction('b');
+
+  t.true(processNode.calledOnce);
+
+  instance.processFunction('c');
+
+  t.true(processNode.calledTwice);
+});
