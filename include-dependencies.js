@@ -16,7 +16,7 @@ module.exports = class IncludeDependencies {
     this.serverless = serverless;
     this.options = options;
     this.hooks = {
-      'before:deploy:function:deploy': this.functionDeploy.bind(this),
+      'before:deploy:function:packageFunction': this.functionDeploy.bind(this),
       'before:deploy:createDeploymentArtifacts': this.createDeploymentArtifacts.bind(this)
     };
   }
