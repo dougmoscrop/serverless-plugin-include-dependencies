@@ -12,6 +12,9 @@ test('includes a deep dependency', (t) => {
   const list = getDependencyList(fileName);
 
   t.true(list.some(item => item.match(/jwa/)));
+  t.true(list.some(item => item.match(/jwk-to-pem/)));
+  t.true(list.some(item => item.match(/jwk-allowed-algorithms/)));
+
 });
 
 test('handles relative/project dependency', (t) => {

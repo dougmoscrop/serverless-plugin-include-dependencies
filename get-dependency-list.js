@@ -2,8 +2,8 @@
 
 const path = require('path');
 
-const precinct = require('precinct');
 const resolve = require('resolve');
+const dependencyTree = require('dependency-tree');
 const findRoot = require('find-root');
 
 module.exports = function(filename, serverless) {
@@ -20,7 +20,13 @@ module.exports = function(filename, serverless) {
       continue;
     }
 
-    precinct.paperwork(current).forEach(name => {
+    const missing = [];
+
+    dependencyTree.toList({
+      filename: current,
+      directory: base,
+      nonExistent: missing
+    }).forEach(name => {
       const abs = resolve.sync(name, {
         basedir: path.dirname(current)
       });
@@ -36,10 +42,14 @@ module.exports = function(filename, serverless) {
         if (resolve.isCore(name)) {
           return;
         }
-        // found a local file, continue to run precinct on it
+        // found a local file, continue to run dependency-tree on it
         filesToProcess.push(abs);
       }
     });
+
+    if (missing.length) {
+      console.error('Missing!', missing);
+    }
 
     dependencies[current] = current;
   }
