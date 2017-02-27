@@ -18,7 +18,9 @@
   "main": "include-dependencies.js",
   "scripts": {
     "test": "nyc --all ava",
-    "posttest": "eslint ."
+    "posttest": "eslint .",
+    "preversion": "update-contrib",
+    "postpublish": "git push origin --all; git push origin --tags"
   },
   "devDependencies": {
     "ava": "0.18.2",
@@ -27,7 +29,8 @@
     "eslint": "3.16.1",
     "lodash": "^4.17.4",
     "nyc": "^10.1.2",
-    "sinon": "^1.17.7"
+    "sinon": "^1.17.7",
+    "update-contributors": "^0.3.1"
   },
   "dependencies": {
     "precinct": "3.6.0",
