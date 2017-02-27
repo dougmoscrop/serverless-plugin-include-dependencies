@@ -22,7 +22,7 @@ module.exports = function(filename, serverless) {
     }
 
     precinct.paperwork(current).forEach(name => {
-      if (resolve.isCore(name)) {
+      if (resolve.isCore(name) || name === 'aws-sdk') {
         return;
       }
 
@@ -63,6 +63,10 @@ module.exports = function(filename, serverless) {
 
     if (pkg.dependencies) {
       Object.keys(pkg.dependencies).forEach(dependency => {
+        if (dependency === 'aws-sdk') {
+          return;
+        }
+
         const pkg = resolvePkg(dependency, {
           cwd: current
         });
@@ -77,6 +81,10 @@ module.exports = function(filename, serverless) {
 
     if (pkg.optionalDependencies) {
       Object.keys(pkg.optionalDependencies).forEach(dependency => {
+        if (dependency === 'aws-sdk') {
+          return;
+        }
+
         const pkg = resolvePkg(dependency, {
           cwd: current
         });
