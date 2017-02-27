@@ -2,10 +2,14 @@
 
 const path = require('path');
 
-const _ = require('lodash');
 const semver = require('semver');
 
 const getDependencyList = require('./get-dependency-list');
+
+function union(a, b) {
+  const arr = a || [];
+  return Array.from(new Set(arr.concat(b)));
+}
 
 module.exports = class IncludeDependencies {
 
@@ -38,7 +42,7 @@ module.exports = class IncludeDependencies {
     const service = this.serverless.service;
 
     service.package = service.package || {};
-    service.package.exclude = _.union(service.package.exclude, ['node_modules/**']);
+    service.package.exclude = union(service.package.exclude, ['node_modules/**']);
 
     const functionObject = service.functions[functionName];
     const runtime = this.getFunctionRuntime(functionObject);
@@ -83,7 +87,7 @@ module.exports = class IncludeDependencies {
   include(target, paths) {
     const servicePath = this.serverless.config.servicePath;
 
-    target.include = _.union(target.include, paths.map(p => path.relative(servicePath, p)));
+    target.include = union(target.include, paths.map(p => path.relative(servicePath, p)));
   }
 
 };

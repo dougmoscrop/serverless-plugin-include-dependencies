@@ -30,3 +30,13 @@ test('should include local files', (t) => {
   t.true(list.some(item => path.basename(item) === 'other-thing.js'));
   t.true(list.some(item => path.basename(item) === 'thing.js'));
 });
+
+test('should include packages with no main', (t) => {
+  const fileName = path.join(__dirname, 'fixtures', 'babel.js');
+
+  const list = getDependencyList(fileName);
+
+  t.true(list.some(item => path.basename(item) === 'babel.js'));
+  t.true(list.some(item => item.match(/babel-runtime/)));
+  t.true(list.some(item => item.match(/babel-polyfill/)));
+});

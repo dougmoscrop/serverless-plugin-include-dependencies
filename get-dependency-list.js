@@ -4,13 +4,13 @@ const path = require('path');
 
 const precinct = require('precinct');
 const resolve = require('resolve');
-const findRoot = require('find-root');
+const resolvePkg = require('resolve-pkg');
 
 module.exports = function(filename, serverless) {
   const base = path.dirname(filename);
   const dependencies = {};
 
-  const modules = {};
+  const modules = new Set();
   const filesToProcess = [filename];
 
   while (filesToProcess.length) {
@@ -21,30 +21,32 @@ module.exports = function(filename, serverless) {
     }
 
     precinct.paperwork(current).forEach(name => {
-      const abs = resolve.sync(name, {
-        basedir: path.dirname(current)
-      });
-      const rel = path.relative(base, abs);
+      if (resolve.isCore(name)) {
+        return;
+      }
 
-      // found a module dependency
-      if (rel.match('node_modules')) {
-        const directory = path.dirname(abs);
-        const root = findRoot(directory);
-
-        modules[root] = true;
-      } else {
-        if (resolve.isCore(name)) {
-          return;
-        }
-        // found a local file, continue to run precinct on it
+      if (name.indexOf('.') === 0) {
+        const abs = resolve.sync(name, {
+          basedir: path.dirname(current)
+        });
         filesToProcess.push(abs);
+      } else {
+        const path = resolvePkg(name, {
+          cwd: base
+        });
+
+        if (path) {
+          modules.add(path);
+        } else {
+          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${name}`);
+        }
       }
     });
 
     dependencies[current] = current;
   }
 
-  const moduleToProcess = Object.keys(modules);
+  const moduleToProcess = Array.from(modules);
 
   while (moduleToProcess.length) {
     const current = moduleToProcess.pop();
@@ -53,39 +55,37 @@ module.exports = function(filename, serverless) {
       continue;
     }
 
+    dependencies[current] = path.join(current, '**');
+
     const pkg = require(path.join(current, 'package.json'));
 
     if (pkg.dependencies) {
       Object.keys(pkg.dependencies).forEach(dependency => {
-        const abs = resolve.sync(dependency, {
-          basedir: current
+        const pkg = resolvePkg(dependency, {
+          cwd: current
         });
 
-        const directory = path.dirname(abs);
-        const root = findRoot(directory);
-
-        moduleToProcess.push(root);
+        if (pkg) {
+          moduleToProcess.push(pkg);
+        } else {
+          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${dependency}`);
+        }
       });
     }
 
     if (pkg.optionalDependencies) {
       Object.keys(pkg.optionalDependencies).forEach(dependency => {
-        try {
-          const abs = resolve.sync(dependency, {
-            basedir: current
-          });
+        const pkg = resolvePkg(dependency, {
+          cwd: current
+        });
 
-          const directory = path.dirname(abs);
-          const root = findRoot(directory);
-
-          moduleToProcess.push(root);
-        } catch (e) {
+        if (pkg) {
+          moduleToProcess.push(pkg);
+        } else {
           serverless.cli.log(`[serverless-plugin-include-dependencies]: missing optional dependency: ${dependency}`);
         }
       });
     }
-
-    dependencies[current] = path.join(current, '**');
   }
 
   return Object.keys(dependencies).map(k => dependencies[k]);
