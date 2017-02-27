@@ -34,7 +34,7 @@ test('constructor should create hooks', t => {
   const instance = createTestInstance();
 
   t.deepEqual(Object.keys(instance.hooks), [
-    'before:deploy:function:deploy',
+    'before:deploy:function:packageFunction',
     'before:deploy:createDeploymentArtifacts'
   ]);
 });

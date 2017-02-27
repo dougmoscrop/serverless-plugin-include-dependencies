@@ -20,7 +20,7 @@
     "test": "nyc --all ava",
     "posttest": "eslint .",
     "preversion": "update-contrib",
-    "postpublish": "git push origin --all; git push origin --tags"
+    "prepublish": "git push origin --all; git push origin --tags"
   },
   "devDependencies": {
     "ava": "0.18.2",
