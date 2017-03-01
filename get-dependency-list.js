@@ -31,6 +31,10 @@ module.exports = function(filename, serverless) {
         });
         filesToProcess.push(abs);
       } else {
+        const tokens = name.split('/');
+        if (tokens.length > 2) {
+          name = tokens.slice(0,2).join('/');
+        }
         const path = resolvePkg(name, {
           cwd: base
         });
