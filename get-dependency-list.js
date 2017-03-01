@@ -5,6 +5,7 @@ const path = require('path');
 const precinct = require('precinct');
 const resolve = require('resolve');
 const resolvePkg = require('resolve-pkg');
+const requirePackageName = require('require-package-name');
 
 module.exports = function(filename, serverless) {
   const base = path.dirname(filename);
@@ -31,7 +32,8 @@ module.exports = function(filename, serverless) {
         });
         filesToProcess.push(abs);
       } else {
-        const path = resolvePkg(name, {
+        const moduleName = requirePackageName(name.replace(/\\/, '/'));
+        const path = resolvePkg(moduleName, {
           cwd: base
         });
 

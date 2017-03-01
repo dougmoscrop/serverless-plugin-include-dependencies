@@ -40,3 +40,19 @@ test('should include packages with no main', (t) => {
   t.true(list.some(item => item.match(/babel-runtime/)));
   t.true(list.some(item => item.match(/babel-polyfill/)));
 });
+
+test('handles requiring dependency file', (t) => {
+	const fileName = path.join(__dirname, 'fixtures', 'dep-file.js');
+
+	const list = getDependencyList(fileName);
+
+	t.true(list.some(item => item.match(/test-dep/)));
+});
+
+test('handles requiring dependency file in scoped package', (t) => {
+	const fileName = path.join(__dirname, 'fixtures', 'scoped-dep-file.js');
+
+	const list = getDependencyList(fileName);
+
+	t.true(list.some(item => item.match(/@test\/scoped-dep/)));
+});
