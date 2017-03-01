@@ -107,16 +107,16 @@ test('processFunction should add to package include', t => {
 
   sinon.stub(instance, 'getHandlerFilename', () => 'handler.js');
   sinon.stub(instance, 'getDependencies', () => [
-    path.join(__dirname, 'fixtures', 'node_modules', 'brightspace-auth-validation', '**'),
-    path.join(__dirname, 'fixtures', 'node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', '**'),
+    path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
+    path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
   ]);
 
   instance.processFunction('a');
 
   t.deepEqual(instance.serverless.service.package.include, [
     '.something',
-    'node_modules/brightspace-auth-validation/**',
-    'node_modules/brightspace-auth-validation/node_modules/jws/**'
+    'node_modules/brightspace-auth-validation/index.js',
+    'node_modules/brightspace-auth-validation/node_modules/jws/index.js'
   ]);
 });
 
@@ -139,8 +139,8 @@ test('processFunction should include individually', t => {
 
   sinon.stub(instance, 'getHandlerFilename', () => 'handler.js');
   sinon.stub(instance, 'getDependencies', () => [
-    path.join(__dirname, 'fixtures', 'node_modules', 'brightspace-auth-validation', '**'),
-    path.join(__dirname, 'fixtures', 'node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', '**'),
+    path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
+    path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
   ]);
 
   instance.processFunction('a');
@@ -150,8 +150,8 @@ test('processFunction should include individually', t => {
   ]);
   t.deepEqual(instance.serverless.service.functions.a.package.include, [
     '.something-else',
-    'node_modules/brightspace-auth-validation/**',
-    'node_modules/brightspace-auth-validation/node_modules/jws/**'
+    'node_modules/brightspace-auth-validation/index.js',
+    'node_modules/brightspace-auth-validation/node_modules/jws/index.js'
   ]);
 });
 
@@ -169,12 +169,102 @@ test('getHandlerFilename should handle a handler expression with a path', t => {
 
 test('getDependencies should return an array', t => {
   const instance = createTestInstance();
-  const directory = path.join(__dirname, 'fixtures');
-  const file = path.join(directory, 'thing.js');
-  const dependencies = instance.getDependencies(file, directory);
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const dependencies = instance.getDependencies(file, []);
 
   t.true(Array.isArray(dependencies));
   t.true(dependencies.length > 0);
+});
+
+test('getDependencies - exclude a folder within a dependency', t => {
+  const instance = createTestInstance();
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const dependencies = instance.getDependencies(file, [
+    'node_modules/**/brightspace-auth-validation/src/**'
+  ]);
+
+  t.true(Array.isArray(dependencies));
+  t.true(dependencies.length > 0);
+  t.true(dependencies.some(p => p.match(/brightspace-auth-validation\/package\.json/)));
+  t.true(dependencies.some(p => p.match(/bn.js\/lib\/bn.js/)));
+  t.false(dependencies.some(p => p.match(/brightspace-auth-validation\/src/)));
+});
+
+test('getDependencies should handle exclude of a file within a dependency', t => {
+  const instance = createTestInstance();
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const dependencies = instance.getDependencies(file, [
+    'node_modules/**/brightspace-auth-validation/LICENSE'
+  ]);
+
+  t.true(Array.isArray(dependencies));
+  t.true(dependencies.length > 0);
+  t.false(dependencies.some(p => p.match(/brightspace-auth-validation\/LICENSE/)));
+  t.true(dependencies.some(p => p.match(/readable-stream\/LICENSE/)));
+});
+
+test('getDependencies should ignore excludes that do not start with node_modules', t => {
+  const instance = createTestInstance();
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const dependencies = instance.getDependencies(file, [
+    '**/LICENSE'
+  ]);
+
+  t.true(Array.isArray(dependencies));
+  t.true(dependencies.length > 0);
+  t.true(dependencies.some(p => p.match(/brightspace-auth-validation\/LICENSE/)));
+  t.true(dependencies.some(p => p.match(/readable-stream\/LICENSE/)));
+});
+
+test('getDependencies should handle exclude of all files with a name', t => {
+  const instance = createTestInstance();
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const dependencies = instance.getDependencies(file, [
+    'node_modules/**/LICENSE*',
+    'node_modules/**/Makefile'
+  ]);
+
+  t.true(Array.isArray(dependencies));
+  t.true(dependencies.length > 0);
+  t.false(dependencies.some(p => p.match(/brightspace-auth-validation\/LICENSE/)));
+  t.false(dependencies.some(p => p.match(/readable-stream\/LICENSE/)));
+  t.false(dependencies.some(p => p.match(/Makefile/)));
+});
+
+test('getDependencies should handle exclude patterns in node_modules', t => {
+  const instance = createTestInstance();
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const dependencies = instance.getDependencies(file, [
+    'node_modules/**/*_browser.js'
+  ]);
+
+  t.true(Array.isArray(dependencies));
+  t.true(dependencies.length > 0);
+  t.false(dependencies.some(p => p.match(/inherits_browser.js/)));
+});
+
+test('getDependencies should handle excluding an entire module', t => {
+  const instance = createTestInstance();
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const dependencies = instance.getDependencies(file, [
+    'node_modules/**/jwk-to-pem'
+  ]);
+
+  t.true(Array.isArray(dependencies));
+  t.true(dependencies.length > 0);
+  t.false(dependencies.some(p => p.match(/jwk-to-pem/)));
+});
+
+test('getDependencies should handle excluding an scoped module', t => {
+  const instance = createTestInstance();
+  const file = path.join(__dirname, 'fixtures', 'scoped-dep-file.js');
+  const dependencies = instance.getDependencies(file, [
+    'node_modules/**/@test/scoped-dep/**'
+  ]);
+
+  t.true(Array.isArray(dependencies));
+  t.true(dependencies.length > 0);
+  t.true(dependencies[0] === 'scoped-dep-file.js');
 });
 
 test('processFunction should handle different runtimes', t => {

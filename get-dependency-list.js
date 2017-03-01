@@ -6,83 +6,88 @@ const precinct = require('precinct');
 const resolve = require('resolve');
 const resolvePkg = require('resolve-pkg');
 const requirePackageName = require('require-package-name');
+const glob = require('glob');
 
 module.exports = function(filename, serverless) {
   const base = path.dirname(filename);
-  const dependencies = {};
 
-  const modules = new Set();
-  const filesToProcess = [filename];
+  const filePaths = new Set();
+  const modulePaths = new Set();
 
-  while (filesToProcess.length) {
-    const current = filesToProcess.pop();
+  const localFilesToProcess = [filename];
 
-    if (current in dependencies) {
+  while (localFilesToProcess.length) {
+    const currentLocalFile = localFilesToProcess.pop();
+
+    if (filePaths.has(currentLocalFile)) {
       continue;
     }
 
-    precinct.paperwork(current).forEach(name => {
+    filePaths.add(currentLocalFile);
+
+    precinct.paperwork(currentLocalFile).forEach(name => {
       if (resolve.isCore(name)) {
         return;
       }
 
       if (name.indexOf('.') === 0) {
         const abs = resolve.sync(name, {
-          basedir: path.dirname(current)
+          basedir: path.dirname(currentLocalFile)
         });
-        filesToProcess.push(abs);
+        localFilesToProcess.push(abs);
       } else {
         const moduleName = requirePackageName(name.replace(/\\/, '/'));
-        const path = resolvePkg(moduleName, {
+        const pathToModule = resolvePkg(moduleName, {
           cwd: base
         });
 
         if (path) {
-          modules.add(path);
+          modulePaths.add(pathToModule);
         } else {
           throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${name}`);
         }
       }
     });
-
-    dependencies[current] = current;
   }
 
-  const moduleToProcess = Array.from(modules);
+  const modulePathsToProcess = Array.from(modulePaths);
 
-  while (moduleToProcess.length) {
-    const current = moduleToProcess.pop();
+  modulePaths.clear();
 
-    if (current in dependencies) {
+  while (modulePathsToProcess.length) {
+    const currentModulePath = modulePathsToProcess.pop();
+
+    if (modulePaths.has(currentModulePath)) {
       continue;
     }
 
-    dependencies[current] = path.join(current, '**');
+    modulePaths.add(currentModulePath);
 
-    const pkg = require(path.join(current, 'package.json'));
+    const packageJson = require(path.join(currentModulePath, 'package.json'));
 
-    if (pkg.dependencies) {
-      Object.keys(pkg.dependencies).forEach(dependency => {
-        const pkg = resolvePkg(dependency, {
-          cwd: current
+    if (packageJson.dependencies) {
+      Object.keys(packageJson.dependencies).forEach(dependency => {
+        const pathToModule = resolvePkg(dependency, {
+          cwd: currentModulePath
         });
 
-        if (pkg) {
-          moduleToProcess.push(pkg);
+        if (pathToModule) {
+          modulePathsToProcess.push(pathToModule);
         } else {
           throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${dependency}`);
         }
       });
     }
 
-    if (pkg.optionalDependencies) {
-      Object.keys(pkg.optionalDependencies).forEach(dependency => {
-        const pkg = resolvePkg(dependency, {
-          cwd: current
+    if (packageJson.optionalDependencies) {
+      Object.keys(packageJson.optionalDependencies).forEach(dependency => {
+
+        const pathToModule = resolvePkg(dependency, {
+          cwd: currentModulePath
         });
 
-        if (pkg) {
-          moduleToProcess.push(pkg);
+        if (pathToModule) {
+          modulePathsToProcess.push(pathToModule);
         } else {
           serverless.cli.log(`[serverless-plugin-include-dependencies]: missing optional dependency: ${dependency}`);
         }
@@ -90,5 +95,17 @@ module.exports = function(filename, serverless) {
     }
   }
 
-  return Object.keys(dependencies).map(k => dependencies[k]);
+  modulePaths.forEach(modulePath => {
+    const moduleFilePaths = glob.sync(path.join(modulePath, '**'), {
+      nodir: true,
+      ignore: path.join(modulePath, 'node_modules', '**'),
+      absolute: true
+    });
+
+    moduleFilePaths.forEach(moduleFilePath => {
+      filePaths.add(moduleFilePath);
+    });
+  });
+
+  return Array.from(filePaths);
 };

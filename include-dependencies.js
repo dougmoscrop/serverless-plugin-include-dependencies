@@ -3,12 +3,13 @@
 const path = require('path');
 
 const semver = require('semver');
+const micromatch = require('micromatch');
 
 const getDependencyList = require('./get-dependency-list');
 
 function union(a, b) {
   const arr = a || [];
-  return Array.from(new Set(arr.concat(b)));
+  return Array.from(new Set(arr.concat(b || [])));
 }
 
 module.exports = class IncludeDependencies {
@@ -41,11 +42,13 @@ module.exports = class IncludeDependencies {
   processFunction(functionName) {
     const service = this.serverless.service;
 
-    service.package = service.package || {};
-    service.package.exclude = union(service.package.exclude, ['node_modules/**']);
-
     const functionObject = service.functions[functionName];
     const runtime = this.getFunctionRuntime(functionObject);
+
+    functionObject.package = functionObject.package || {};
+
+    service.package = service.package || {};
+    service.package.exclude = union(service.package.exclude, ['node_modules/**']);
 
     if (runtime.match(/nodejs*/)) {
       this.processNodeFunction(functionObject);
@@ -54,15 +57,19 @@ module.exports = class IncludeDependencies {
 
   processNodeFunction(functionObject) {
     const service = this.serverless.service;
-
+    
     const fileName = this.getHandlerFilename(functionObject.handler);
-    const list = this.getDependencies(fileName);
 
     if (service.package && service.package.individually) {
-      functionObject.package = functionObject.package || {};
-      this.include(functionObject.package, list);
+      const exclude = union(service.package.exclude, functionObject.exclude);
+      const dependencies = this.getDependencies(fileName, exclude);
+
+      this.include(functionObject, dependencies);
     } else {
-      this.include(service.package, list);
+      const exclude = service.package.exclude;
+      const dependencies = this.getDependencies(fileName, exclude);
+
+      this.include(service, dependencies);
     }
   }
 
@@ -80,14 +87,29 @@ module.exports = class IncludeDependencies {
     return require.resolve((path.join(this.serverless.config.servicePath, handlerPath)));
   }
 
-  getDependencies(fileName) {
+  getDependencies(fileName, exclude) {
+    const servicePath = this.serverless.config.servicePath;
+    const dependencies = this.getDependencyList(fileName);
+
+    const relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
+
+    return relativeDependencies.filter(p => {
+      return !exclude.some(e => {
+        if (e.indexOf('node_modules') !== 0 || e === 'node_modules' || e === 'node_modules/**') {
+          return false;
+        }
+
+        return micromatch.contains(p, e);
+      });
+    });
+  }
+
+  getDependencyList(fileName) {
     return getDependencyList(fileName, this.serverless);
   }
 
-  include(target, paths) {
-    const servicePath = this.serverless.config.servicePath;
-
-    target.include = union(target.include, paths.map(p => path.relative(servicePath, p)));
+  include(target, dependencies) {
+    target.package.include = union(target.package.include, dependencies);
   }
 
 };
