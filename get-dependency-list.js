@@ -74,6 +74,9 @@ module.exports = function(filename, serverless) {
         if (pathToModule) {
           modulePathsToProcess.push(pathToModule);
         } else {
+          if (packageJson.optionalDependencies && dependency in packageJson.optionalDependencies) {
+            return;
+          }
           throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${dependency}`);
         }
       });
@@ -81,7 +84,6 @@ module.exports = function(filename, serverless) {
 
     if (packageJson.optionalDependencies) {
       Object.keys(packageJson.optionalDependencies).forEach(dependency => {
-
         const pathToModule = resolvePkg(dependency, {
           cwd: currentModulePath
         });

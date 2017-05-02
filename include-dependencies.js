@@ -57,7 +57,7 @@ module.exports = class IncludeDependencies {
 
   processNodeFunction(functionObject) {
     const service = this.serverless.service;
-    
+
     const fileName = this.getHandlerFilename(functionObject.handler);
 
     if (service.package && service.package.individually) {

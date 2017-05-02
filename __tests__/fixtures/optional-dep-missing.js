@@ -1,0 +1,1 @@
+require('optional-dep-parent');
