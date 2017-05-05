@@ -44,7 +44,7 @@ module.exports = function(filename, serverless) {
         if (pathToModule) {
           modulePaths.add(pathToModule);
         } else {
-          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${name}`);
+          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${moduleName}`);
         }
       }
     });
