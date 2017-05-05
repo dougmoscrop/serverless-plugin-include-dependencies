@@ -76,3 +76,11 @@ test('should handle requires to a missing optionalDepenency listed in dependenci
   t.true(list.some(item => item.indexOf(`node_modules/optional-dep-parent/index.js`) !== -1));
   t.true(log.called);
 });
+
+test('should handle requires with aws-sdk -- when missing', (t) => {
+  const fileName = path.join(__dirname, 'fixtures', 'aws.js');
+
+  const list = getDependencyList(fileName, null);
+
+  t.true(list.some(item => item.indexOf(`aws.js`) !== -1));
+});

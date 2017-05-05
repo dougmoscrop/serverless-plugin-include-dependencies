@@ -8,6 +8,12 @@ const resolvePkg = require('resolve-pkg');
 const requirePackageName = require('require-package-name');
 const glob = require('glob');
 
+const alwaysIgnored = new Set(['aws-sdk']);
+
+function ignoreMissing(dependency, optional) {
+  return alwaysIgnored.has(dependency) || (optional && dependency in optional);
+}
+
 module.exports = function(filename, serverless) {
   const base = path.dirname(filename);
 
@@ -44,6 +50,9 @@ module.exports = function(filename, serverless) {
         if (pathToModule) {
           modulePaths.add(pathToModule);
         } else {
+          if (ignoreMissing(moduleName)) {
+            return;
+          }
           throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${moduleName}`);
         }
       }
@@ -74,7 +83,7 @@ module.exports = function(filename, serverless) {
         if (pathToModule) {
           modulePathsToProcess.push(pathToModule);
         } else {
-          if (packageJson.optionalDependencies && dependency in packageJson.optionalDependencies) {
+          if (ignoreMissing(dependency, packageJson.optionalDependencies)) {
             return;
           }
           throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${dependency}`);
