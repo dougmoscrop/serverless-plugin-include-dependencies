@@ -84,3 +84,20 @@ test('should handle requires with aws-sdk -- when missing', (t) => {
 
   t.true(list.some(item => item.indexOf(`aws.js`) !== -1));
 });
+
+test('includes a dependency with peerDependencies', (t) => {
+  const fileName = path.join(__dirname, 'fixtures', 'dep-with-peer.js');
+
+  const list = getDependencyList(fileName, null);
+
+  t.true(list.some(item => item.match(/test-dep.js/)));
+  t.true(list.some(item => item.match(/dep-with-peer/)));
+});
+
+test('throws on missing peerDependencies', (t) => {
+  const fileName = path.join(__dirname, 'fixtures', 'dep-missing-peer.js');
+
+  const error = t.throws(() => getDependencyList(fileName, null));
+
+  t.is(error.message, '[serverless-plugin-include-dependencies]: Could not find wont-find-me');
+});

@@ -104,6 +104,20 @@ module.exports = function(filename, serverless) {
         }
       });
     }
+
+    if (packageJson.peerDependencies) {
+      Object.keys(packageJson.peerDependencies).forEach(dependency => {
+        const pathToModule = resolvePkg(dependency, {
+          cwd: currentModulePath
+        });
+
+        if (pathToModule) {
+          modulePathsToProcess.push(pathToModule);
+        } else {
+          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${dependency}`);
+        }
+      });
+    }
   }
 
   modulePaths.forEach(modulePath => {
