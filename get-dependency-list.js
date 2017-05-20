@@ -32,7 +32,7 @@ module.exports = function(filename, serverless) {
     filePaths.add(currentLocalFile);
 
     precinct.paperwork(currentLocalFile).forEach(name => {
-      if (resolve.isCore(name)) {
+      if (resolve.isCore(name) || alwaysIgnored.has(name)) {
         return;
       }
 
@@ -76,6 +76,10 @@ module.exports = function(filename, serverless) {
 
     if (packageJson.dependencies) {
       Object.keys(packageJson.dependencies).forEach(dependency => {
+        if (alwaysIgnored.has(dependency)) {
+          return;
+        }
+
         const pathToModule = resolvePkg(dependency, {
           cwd: currentModulePath
         });
@@ -93,6 +97,10 @@ module.exports = function(filename, serverless) {
 
     if (packageJson.optionalDependencies) {
       Object.keys(packageJson.optionalDependencies).forEach(dependency => {
+        if (alwaysIgnored.has(dependency)) {
+          return;
+        }
+
         const pathToModule = resolvePkg(dependency, {
           cwd: currentModulePath
         });
@@ -107,6 +115,10 @@ module.exports = function(filename, serverless) {
 
     if (packageJson.peerDependencies) {
       Object.keys(packageJson.peerDependencies).forEach(dependency => {
+        if (alwaysIgnored.has(dependency)) {
+          return;
+        }
+        
         const pathToModule = resolvePkg(dependency, {
           cwd: currentModulePath
         });
@@ -114,7 +126,7 @@ module.exports = function(filename, serverless) {
         if (pathToModule) {
           modulePathsToProcess.push(pathToModule);
         } else {
-          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${dependency}`);
+          throw new Error(`[serverless-plugin-include-dependencies]: Could not find (peer) ${dependency}`);
         }
       });
     }
