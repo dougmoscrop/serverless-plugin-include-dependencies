@@ -6,10 +6,16 @@ const sinon = require('sinon')
 
 const getDependencyList = require('../get-dependency-list.js');
 
+const serverless = {
+  config: {
+    servicePath: path.join(__dirname, 'fixtures')
+  }
+};
+
 test('includes a deep dependency', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'thing.js');
 
-  const list = getDependencyList(fileName, null);
+  const list = getDependencyList(fileName, serverless);
 
   t.true(list.some(item => item.match(/jwa/)));
 });
@@ -17,7 +23,7 @@ test('includes a deep dependency', (t) => {
 test('handles relative/project dependency', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'other', 'other-thing.js');
 
-  const list = getDependencyList(fileName, null);
+  const list = getDependencyList(fileName, serverless);
 
   t.true(list.some(item => item.match(/jwa/)));
 });
@@ -25,7 +31,7 @@ test('handles relative/project dependency', (t) => {
 test('should include local files', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'other', 'other-thing.js');
 
-  const list = getDependencyList(fileName, null);
+  const list = getDependencyList(fileName, serverless);
 
   t.true(list.some(item => path.basename(item) === 'other-thing.js'));
   t.true(list.some(item => path.basename(item) === 'thing.js'));
@@ -34,7 +40,7 @@ test('should include local files', (t) => {
 test('should include packages with no main', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'babel.js');
 
-  const list = getDependencyList(fileName, null);
+  const list = getDependencyList(fileName, serverless);
 
   t.true(list.some(item => path.basename(item) === 'babel.js'));
   t.true(list.some(item => item.match(/babel-runtime/)));
@@ -44,7 +50,7 @@ test('should include packages with no main', (t) => {
 test('handles requiring dependency file', (t) => {
 	const fileName = path.join(__dirname, 'fixtures', 'dep-file.js');
 
-	const list = getDependencyList(fileName, null);
+	const list = getDependencyList(fileName, serverless);
 
 	t.true(list.some(item => item.match(/test-dep/)));
 });
@@ -52,7 +58,7 @@ test('handles requiring dependency file', (t) => {
 test('handles requiring dependency file in scoped package', (t) => {
 	const fileName = path.join(__dirname, 'fixtures', 'scoped-dep-file.js');
 
-	const list = getDependencyList(fileName, null);
+	const list = getDependencyList(fileName, serverless);
 
 	t.true(list.some(item => item.indexOf(`@test/scoped-dep`) !== -1));
 });
@@ -60,17 +66,17 @@ test('handles requiring dependency file in scoped package', (t) => {
 test('should handle requires with same relative path but different absolute path', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'same-relative-require.js');
 
-  const list = getDependencyList(fileName, null);
+  const list = getDependencyList(fileName, serverless);
 
   t.true(list.some(item => item.indexOf(`bar/baz.js`) !== -1));
   t.true(list.some(item => item.indexOf(`foo/baz.js`) !== -1));
 });
 
-test('should handle requires to a missing optionalDepenency listed in dependencies', (t) => {
+test('should handle requires to a missing optionalDependency listed in dependencies', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'optional-dep-missing.js');
   const log = sinon.stub();
 
-  const list = getDependencyList(fileName, { cli: { log } });
+  const list = getDependencyList(fileName, Object.assign({ cli: { log } }, serverless));
 
   t.true(list.some(item => item.indexOf(`optional-dep-missing.js`) !== -1));
   t.true(list.some(item => item.indexOf(`node_modules/optional-dep-parent/index.js`) !== -1));
@@ -80,7 +86,7 @@ test('should handle requires to a missing optionalDepenency listed in dependenci
 test('should handle requires with aws-sdk -- when missing', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'missing-aws-sdk', 'entry.js');
 
-  const list = getDependencyList(fileName, null);
+  const list = getDependencyList(fileName, serverless);
 
   t.true(list.some(item => item.indexOf(`entry.js`) !== -1));
 });
@@ -88,7 +94,7 @@ test('should handle requires with aws-sdk -- when missing', (t) => {
 test('should handle requires with aws-sdk -- ignores when missing', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'missing-aws-sdk', 'entry.js');
 
-  const list = getDependencyList(fileName, null);
+  const list = getDependencyList(fileName, serverless);
 
   t.true(list.some(item => item.indexOf(`entry.js`) !== -1));
 });
@@ -96,7 +102,7 @@ test('should handle requires with aws-sdk -- ignores when missing', (t) => {
 test('should handle requires with aws-sdk -- does not include when found', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'finds-aws-sdk', 'entry.js');
 
-  const list = getDependencyList(fileName, null);
+  const list = getDependencyList(fileName, serverless);
 
   t.true(list.some(item => item.indexOf(`entry.js`) !== -1));
   t.false(list.some(item => item.indexOf(`fail-if-found.js`) !== -1));
@@ -105,7 +111,7 @@ test('should handle requires with aws-sdk -- does not include when found', (t) =
 test('includes a dependency with peerDependencies', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'dep-with-peer.js');
 
-  const list = getDependencyList(fileName, null);
+  const list = getDependencyList(fileName, serverless);
 
   t.true(list.some(item => item.match(/test-dep.js/)));
   t.true(list.some(item => item.match(/dep-with-peer/)));
@@ -114,7 +120,16 @@ test('includes a dependency with peerDependencies', (t) => {
 test('throws on missing peerDependencies', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'dep-missing-peer.js');
 
-  const error = t.throws(() => getDependencyList(fileName, null));
+  const error = t.throws(() => getDependencyList(fileName, serverless));
 
-  t.is(error.message, '[serverless-plugin-include-dependencies]: Could not find (peer) wont-find-me');
+  t.is(error.message, '[serverless-plugin-include-dependencies]: Could not find peerDependencies:wont-find-me');
+});
+
+
+test('throws on outside path', (t) => {
+  const fileName = path.join(__dirname, 'fixtures', 'outside.js');
+
+  const error = t.throws(() => getDependencyList(fileName, serverless));
+
+  t.true(error.message.indexOf(`A dependency was located outside of the service directory`) !== -1);
 });

@@ -18,8 +18,10 @@ module.exports = class IncludeDependencies {
     if (!semver.satisfies(serverless.version, '>= 1.2')) {
       throw new Error('serverless-plugin-include-dependencies requires serverless 1.2 or higher!');
     }
+
     this.serverless = serverless;
     this.options = options;
+
     this.hooks = {
       'before:deploy:function:packageFunction': this.functionDeploy.bind(this),
       'before:deploy:createDeploymentArtifacts': this.createDeploymentArtifacts.bind(this)

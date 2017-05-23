@@ -8,14 +8,20 @@ const resolvePkg = require('resolve-pkg');
 const requirePackageName = require('require-package-name');
 const glob = require('glob');
 
+const utils = require('./utils');
+
 const alwaysIgnored = new Set(['aws-sdk']);
 
 function ignoreMissing(dependency, optional) {
   return alwaysIgnored.has(dependency) || (optional && dependency in optional);
 }
 
+function invalidReference(path) {
+  throw new Error(`A dependency was located outside of the service directory - at ${path} - this is unsupported and is usually caused by using 'npm link'. See https://github.com/dougmoscrop/serverless-plugin-include-dependencies/issues/14`);
+}
+
 module.exports = function(filename, serverless) {
-  const base = path.dirname(filename);
+  const servicePath = serverless.config.servicePath;
 
   const filePaths = new Set();
   const modulePaths = new Set();
@@ -44,10 +50,13 @@ module.exports = function(filename, serverless) {
       } else {
         const moduleName = requirePackageName(name.replace(/\\/, '/'));
         const pathToModule = resolvePkg(moduleName, {
-          cwd: base
+          cwd: servicePath
         });
 
         if (pathToModule) {
+          if (utils.isOutside(servicePath, pathToModule)) {
+            invalidReference(pathToModule);
+          }
           modulePaths.add(pathToModule);
         } else {
           if (ignoreMissing(moduleName)) {
@@ -74,62 +83,34 @@ module.exports = function(filename, serverless) {
 
     const packageJson = require(path.join(currentModulePath, 'package.json'));
 
-    if (packageJson.dependencies) {
-      Object.keys(packageJson.dependencies).forEach(dependency => {
-        if (alwaysIgnored.has(dependency)) {
-          return;
-        }
+    ['dependencies', 'peerDependencies', 'optionalDependencies'].forEach(key => {
+      const dependencies = packageJson[key];
 
-        const pathToModule = resolvePkg(dependency, {
-          cwd: currentModulePath
-        });
-
-        if (pathToModule) {
-          modulePathsToProcess.push(pathToModule);
-        } else {
-          if (ignoreMissing(dependency, packageJson.optionalDependencies)) {
+      if (dependencies) {
+        Object.keys(dependencies).forEach(dependency => {
+          if (alwaysIgnored.has(dependency)) {
             return;
           }
-          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${dependency}`);
-        }
-      });
-    }
 
-    if (packageJson.optionalDependencies) {
-      Object.keys(packageJson.optionalDependencies).forEach(dependency => {
-        if (alwaysIgnored.has(dependency)) {
-          return;
-        }
+          const pathToModule = resolvePkg(dependency, {
+            cwd: currentModulePath
+          });
 
-        const pathToModule = resolvePkg(dependency, {
-          cwd: currentModulePath
+          if (pathToModule) {
+            if (utils.isOutside(servicePath, pathToModule)) {
+              invalidReference(pathToModule);
+            }
+            modulePathsToProcess.push(pathToModule);
+          } else {
+            if (ignoreMissing(dependency, packageJson.optionalDependencies)) {
+              serverless.cli.log(`[serverless-plugin-include-dependencies]: WARNING missing optional dependency: ${dependency}`);
+              return;
+            }
+            throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${key}:${dependency}`);
+          }
         });
-
-        if (pathToModule) {
-          modulePathsToProcess.push(pathToModule);
-        } else {
-          serverless.cli.log(`[serverless-plugin-include-dependencies]: missing optional dependency: ${dependency}`);
-        }
-      });
-    }
-
-    if (packageJson.peerDependencies) {
-      Object.keys(packageJson.peerDependencies).forEach(dependency => {
-        if (alwaysIgnored.has(dependency)) {
-          return;
-        }
-        
-        const pathToModule = resolvePkg(dependency, {
-          cwd: currentModulePath
-        });
-
-        if (pathToModule) {
-          modulePathsToProcess.push(pathToModule);
-        } else {
-          throw new Error(`[serverless-plugin-include-dependencies]: Could not find (peer) ${dependency}`);
-        }
-      });
-    }
+      }
+    });
   }
 
   modulePaths.forEach(modulePath => {
