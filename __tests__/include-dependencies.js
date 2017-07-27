@@ -35,7 +35,7 @@ test('constructor should create hooks', t => {
 
   t.deepEqual(Object.keys(instance.hooks), [
     'before:deploy:function:packageFunction',
-    'before:deploy:createDeploymentArtifacts'
+    'before:package:createDeploymentArtifacts'
   ]);
 });
 
