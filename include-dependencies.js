@@ -24,7 +24,7 @@ module.exports = class IncludeDependencies {
 
     this.hooks = {
       'before:deploy:function:packageFunction': this.functionDeploy.bind(this),
-      'before:deploy:createDeploymentArtifacts': this.createDeploymentArtifacts.bind(this)
+      'before:package:createDeploymentArtifacts': this.createDeploymentArtifacts.bind(this)
     };
   }
 
