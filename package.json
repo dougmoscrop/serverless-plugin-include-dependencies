@@ -1,6 +1,6 @@
 {
   "name": "serverless-plugin-include-dependencies",
-  "version": "2.1.2",
+  "version": "3.0.0",
   "engines": {
     "node": ">=4.0"
   },
@@ -52,6 +52,7 @@
   "contributors": [
     "Doug Moscrop <doug.moscrop@gmail.com> (https://github.com/dougmoscrop)",
     "Nicole Simone (https://github.com/nsimone)",
-    "DIALLO Mamadou Bobo (https://github.com/ecstasy2)"
+    "DIALLO Mamadou Bobo (https://github.com/ecstasy2)",
+    "Tommy Brunn <tommy.brunn@gmail.com> (https://github.com/Nevon)"
   ]
 }
