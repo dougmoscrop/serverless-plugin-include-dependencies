@@ -1,5 +1,3 @@
-> NOTE: This plugin could cause a `maximum call stack size exceeded` error (see https://github.com/serverless/serverless/pull/3349 for fix in Serverless)
-
 # serverless-plugin-include-dependencies
 
 This is a Serverless plugin that should make your deployed functions smaller.

@@ -15,8 +15,8 @@ function union(a, b) {
 module.exports = class IncludeDependencies {
 
   constructor(serverless, options) {
-    if (!semver.satisfies(serverless.version, '>= 1.2')) {
-      throw new Error('serverless-plugin-include-dependencies requires serverless 1.2 or higher!');
+    if (!semver.satisfies(serverless.version, '>= 1.13')) {
+      throw new Error('serverless-plugin-include-dependencies requires serverless 1.13 or higher!');
     }
 
     this.serverless = serverless;

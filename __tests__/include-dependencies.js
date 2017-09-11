@@ -11,7 +11,7 @@ const IncludeDependencies = require('../include-dependencies.js');
 function createTestInstance(serverless, options) {
   return new IncludeDependencies(
     _.merge({
-      version: '1.2.0',
+      version: '1.13.2',
       config: {
         servicePath: path.join(__dirname, 'fixtures')
       },
@@ -27,7 +27,7 @@ function createTestInstance(serverless, options) {
 }
 
 test('constructor should throw on older version', t => {
-  t.throws(() => createTestInstance({ version: '1.1.1' }));
+  t.throws(() => createTestInstance({ version: '1.12.0' }));
 });
 
 test('constructor should create hooks', t => {
