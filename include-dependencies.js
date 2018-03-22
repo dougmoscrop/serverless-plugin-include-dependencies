@@ -4,6 +4,8 @@ const path = require('path');
 
 const semver = require('semver');
 const micromatch = require('micromatch');
+const glob = require('glob');
+const fs = require('fs');
 
 const getDependencyList = require('./get-dependency-list');
 
@@ -53,7 +55,50 @@ module.exports = class IncludeDependencies {
     service.package.exclude = union(service.package.exclude, ['node_modules/**']);
 
     if (runtime.match(/nodejs*/)) {
+      this.processIncludes(functionObject);
       this.processNodeFunction(functionObject);
+    }
+  }
+
+  includeGlobs(target, include, exclude) {
+    include.forEach(includeGlob => {
+      this.include(target, [includeGlob]);
+      glob.sync(path.join(this.serverless.config.servicePath, includeGlob))
+        .filter(p => !exclude.some(e => {
+          if (e.indexOf('node_modules') !== 0 || e === 'node_modules' || e === 'node_modules/**') {
+            return false;
+          }
+          return micromatch.contains(p, e);
+        }))
+        .forEach(filePath => {
+          var stat = fs.statSync(filePath);
+          if (stat && stat.isFile()) {
+            const dependencies = this.getDependencies(filePath, exclude);
+            this.include(target, dependencies);
+          }
+        });
+      }
+    );
+  }
+
+  getPluginOptions() {
+    const service = this.serverless.service;
+    return (service.custom && service.custom.includeDependencies) || {};
+  }
+
+  processIncludes(functionObject) {
+    const service = this.serverless.service;
+    const options = this.getPluginOptions();
+    if (!options || !options.always) {
+      return;
+    }
+    const include = union(options.always, []);
+    if (service.package && service.package.individually) {
+      const exclude = union(service.package.exclude, functionObject.package.exclude);
+      this.includeGlobs(functionObject, include, exclude);
+    } else {
+      const exclude = service.package.exclude || [];
+      this.includeGlobs(service, include, exclude);
     }
   }
 
@@ -63,7 +108,7 @@ module.exports = class IncludeDependencies {
     const fileName = this.getHandlerFilename(functionObject.handler);
 
     if (service.package && service.package.individually) {
-      const exclude = union(service.package.exclude, functionObject.exclude);
+      const exclude = union(service.package.exclude, functionObject.package.exclude);
       const dependencies = this.getDependencies(fileName, exclude);
 
       this.include(functionObject, dependencies);
@@ -100,7 +145,6 @@ module.exports = class IncludeDependencies {
         if (e.indexOf('node_modules') !== 0 || e === 'node_modules' || e === 'node_modules/**') {
           return false;
         }
-
         return micromatch.contains(p, e);
       });
     });

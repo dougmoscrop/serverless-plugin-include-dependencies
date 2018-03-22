@@ -120,6 +120,112 @@ test('processFunction should add to package include', t => {
   ]);
 });
 
+test('processFunction should add "always" globs and their dependencies to package include', t => {
+  const instance = createTestInstance({
+    service: {
+      package: {
+        exclude: ['node_modules/**/core-js/**']
+      },
+      custom: {
+        includeDependencies: {
+          always: ['api/**']
+        }
+      },
+    }
+  });
+
+  sinon.stub(instance, 'getHandlerFilename', () => path.join(__dirname, 'fixtures', 'api', 'handler.js'));
+
+  instance.processFunction('a');
+
+  t.deepEqual(instance.serverless.service.package.include, [
+    'api/**',
+    'api/dynamic-required.js',
+    'node_modules/test-dep/package.json',
+    'node_modules/test-dep/test-dep.js',
+    'api/handler.js',
+    'node_modules/@test/scoped-dep/package.json',
+  ]);
+});
+
+test('processFunction should add "always" globs and their dependencies to function include with package options', t => {
+  const instance = createTestInstance({
+    service: {
+      package: {
+        individually: true,
+        include: ['.something']
+      },
+      custom: {
+        includeDependencies: {
+          always: ['api/**']
+        }
+      },
+      functions: {
+        a: {
+          package: {
+            exclude: ['node_modules/**/core-js/**']
+          }
+        }
+      }
+    }
+  });
+
+  sinon.stub(instance, 'getHandlerFilename', () => path.join(__dirname, 'fixtures', 'api', 'handler.js'));
+
+  instance.processFunction('a');
+
+  t.deepEqual(instance.serverless.service.package.include, [
+    '.something'
+  ]);
+
+  t.deepEqual(instance.serverless.service.functions.a.package.include, [
+    'api/**',
+    'api/dynamic-required.js',
+    'node_modules/test-dep/package.json',
+    'node_modules/test-dep/test-dep.js',
+    'api/handler.js',
+    'node_modules/@test/scoped-dep/package.json',
+  ]);
+});
+
+test('processFunction should add "always" globs and their dependencies to function include without package options', t => {
+  const instance = createTestInstance({
+    service: {
+      package: {
+        individually: true,
+        include: ['.something'],
+        exclude: ['node_modules/**/core-js/**']
+      },
+      custom: {
+        includeDependencies: {
+          always: ['api/**']
+        }
+      },
+      functions: {
+        a: {
+        }
+      }
+    }
+  });
+
+  sinon.stub(instance, 'getHandlerFilename', () => path.join(__dirname, 'fixtures', 'api', 'handler.js'));
+
+  instance.processFunction('a');
+
+  t.deepEqual(instance.serverless.service.package.include, [
+    '.something'
+  ]);
+
+  t.deepEqual(instance.serverless.service.functions.a.package.include, [
+    'api/**',
+    'api/dynamic-required.js',
+    'node_modules/test-dep/package.json',
+    'node_modules/test-dep/test-dep.js',
+    'api/handler.js',
+    'node_modules/@test/scoped-dep/package.json',
+  ]);
+});
+
 test('processFunction should include individually', t => {
   const instance = createTestInstance({
     service: {

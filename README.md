@@ -17,6 +17,11 @@ package:
 plugins:
   - serverless-plugin-include-dependencies
 
+custom:
+  includeDependencies:
+    always:
+      - 'src/lib/**' # (optional) always include these globs and their dependencies
+
 functions:
   foo:
     handler: src/handler/foo.handler
