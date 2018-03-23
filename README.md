@@ -4,6 +4,21 @@ This is a Serverless plugin that should make your deployed functions smaller.
 
 It does this by enabling you to add your `node_modules` folder to the `exclude` list, then it individually adds each module that your handler depends on.
 
+## Installation
+
+First install the plugin via NPM.
+
+```
+npm install serverless-plugin-include-dependencies --save-dev
+```
+
+Then include the plugin within your serverless.yml config.
+
+```yml
+plugins:
+  - serverless-plugin-include-dependencies
+```
+
 ## Usage Example
 
 `serverless.yml`
