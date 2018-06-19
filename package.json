@@ -33,7 +33,7 @@
   "dependencies": {
     "glob": "7.1.1",
     "micromatch": "2.3.11",
-    "precinct": "3.6.0",
+    "precinct": "4.2.0",
     "require-package-name": "2.0.1",
     "resolve": "1.3.2",
     "resolve-pkg": "1.0.0",
