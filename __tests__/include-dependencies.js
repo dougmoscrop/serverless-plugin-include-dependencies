@@ -71,8 +71,8 @@ test('createDeploymentArtifacts should call processFunction with function name',
 test('processFunction should exclude node_modules when no package defined', t => {
   const instance = createTestInstance();
 
-  sinon.stub(instance, 'getHandlerFilename', () => 'handler.js');
-  sinon.stub(instance, 'getDependencies', () => []);
+  sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
+  sinon.stub(instance, 'getDependencies').returns([]);
 
   instance.processFunction('a');
 
@@ -88,8 +88,8 @@ test('processFunction should add node_modules to package exclude', t => {
     }
   });
 
-  sinon.stub(instance, 'getHandlerFilename', () => 'handler.js');
-  sinon.stub(instance, 'getDependencies', () => []);
+  sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
+  sinon.stub(instance, 'getDependencies').returns([]);
 
   instance.processFunction('a');
 
@@ -105,8 +105,8 @@ test('processFunction should add to package include', t => {
     }
   });
 
-  sinon.stub(instance, 'getHandlerFilename', () => 'handler.js');
-  sinon.stub(instance, 'getDependencies', () => [
+  sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
+  sinon.stub(instance, 'getDependencies').returns([
     path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
     path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
   ]);
@@ -134,7 +134,9 @@ test('processFunction should add "always" globs and their dependencies to packag
     }
   });
 
-  sinon.stub(instance, 'getHandlerFilename', () => path.join(__dirname, 'fixtures', 'api', 'handler.js'));
+  sinon.stub(instance, 'getHandlerFilename').returns(
+      path.join(__dirname, 'fixtures', 'api', 'handler.js')
+  );
 
   instance.processFunction('a');
 
@@ -170,7 +172,9 @@ test('processFunction should add "always" globs and their dependencies to functi
     }
   });
 
-  sinon.stub(instance, 'getHandlerFilename', () => path.join(__dirname, 'fixtures', 'api', 'handler.js'));
+  sinon.stub(instance, 'getHandlerFilename').returns(
+    path.join(__dirname, 'fixtures', 'api', 'handler.js')
+  );
 
   instance.processFunction('a');
 
@@ -208,7 +212,9 @@ test('processFunction should add "always" globs and their dependencies to functi
     }
   });
 
-  sinon.stub(instance, 'getHandlerFilename', () => path.join(__dirname, 'fixtures', 'api', 'handler.js'));
+  sinon.stub(instance, 'getHandlerFilename').returns(
+    path.join(__dirname, 'fixtures', 'api', 'handler.js')
+  );
 
   instance.processFunction('a');
 
@@ -243,8 +249,8 @@ test('processFunction should include individually', t => {
     }
   });
 
-  sinon.stub(instance, 'getHandlerFilename', () => 'handler.js');
-  sinon.stub(instance, 'getDependencies', () => [
+  sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
+  sinon.stub(instance, 'getDependencies').returns([
     path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
     path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
   ]);
@@ -395,7 +401,7 @@ test('processFunction should handle different runtimes', t => {
     }
   });
 
-  const processNode = sinon.stub(instance, 'processNodeFunction', () => true);
+  const processNode = sinon.stub(instance, 'processNodeFunction').returns(true);
 
   instance.processFunction('a');
 
