@@ -19,7 +19,7 @@
   "scripts": {
     "test": "nyc --all ava",
     "posttest": "eslint .",
-    "preversion": "update-contrib",
+    "preversion": "update contributors",
     "publish": "git push origin master; git push origin --tags"
   },
   "devDependencies": {
@@ -28,12 +28,13 @@
     "lodash": "^4.17.10",
     "nyc": "^12.0.2",
     "sinon": "^6.1.4",
-    "update-contributors": "^0.3.1"
+    "update": "^0.7.4",
+    "updater-contributors": "^0.1.2"
   },
   "dependencies": {
     "glob": "^7.1.1",
     "micromatch": "^3.1.0",
-    "precinct": "^3.6.0",
+    "precinct": "^4.2.0",
     "require-package-name": "^2.0.1",
     "resolve": "^1.3.2",
     "resolve-pkg": "^1.0.0",
@@ -50,9 +51,11 @@
     ]
   },
   "contributors": [
-    "Doug Moscrop <doug.moscrop@gmail.com> (https://github.com/dougmoscrop)",
+    "Doug Moscrop (https://github.com/dougmoscrop)",
     "Nicole Simone (https://github.com/nsimone)",
     "DIALLO Mamadou Bobo (https://github.com/ecstasy2)",
-    "Tommy Brunn <tommy.brunn@gmail.com> (https://github.com/Nevon)"
+    "Rick (https://github.com/RickvdP)",
+    "Russell Schick (https://github.com/rschick)",
+    "Tommy Brunn (http://tommybrunn.com)"
   ]
 }
