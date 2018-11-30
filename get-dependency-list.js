@@ -4,20 +4,14 @@ const path = require('path');
 
 const precinct = require('precinct');
 const resolve = require('resolve');
-const resolvePkg = require('resolve-pkg');
+const readPkgUp = require('read-pkg-up');
 const requirePackageName = require('require-package-name');
 const glob = require('glob');
-
-const utils = require('./utils');
 
 const alwaysIgnored = new Set(['aws-sdk']);
 
 function ignoreMissing(dependency, optional) {
   return alwaysIgnored.has(dependency) || (optional && dependency in optional);
-}
-
-function invalidReference(path) {
-  throw new Error(`A dependency was located outside of the service directory - at ${path} - this is unsupported and is usually caused by using 'npm link'. See https://github.com/dougmoscrop/serverless-plugin-include-dependencies/issues/14`);
 }
 
 module.exports = function(filename, serverless) {
@@ -26,7 +20,34 @@ module.exports = function(filename, serverless) {
   const filePaths = new Set();
   const modulePaths = new Set();
 
+  const modulesToProcess = [];
   const localFilesToProcess = [filename];
+
+  function handle(name, basedir, optionalDependencies) {
+    const moduleName = requirePackageName(name.replace(/\\/, '/'));
+
+    if (alwaysIgnored.has(moduleName)) {
+      return;
+    }
+
+    try {
+      const pathToModule = resolve.sync(path.join(moduleName, 'package.json'), { basedir });
+      const pkg = readPkgUp.sync({ cwd: pathToModule });
+
+      if (pkg) {
+        modulesToProcess.push(pkg);
+      }
+    } catch (e) {
+      if (e.code === 'MODULE_NOT_FOUND') {
+        if (ignoreMissing(moduleName, optionalDependencies)) {
+          serverless.cli.log(`[serverless-plugin-include-dependencies]: WARNING missing optional dependency: ${moduleName}`);
+          return null;
+        }
+        throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${moduleName}`);
+      }
+      throw e;
+    }
+  }
 
   while (localFilesToProcess.length) {
     const currentLocalFile = localFilesToProcess.pop();
@@ -37,43 +58,21 @@ module.exports = function(filename, serverless) {
 
     filePaths.add(currentLocalFile);
 
-    precinct.paperwork(currentLocalFile).forEach(name => {
-      if (resolve.isCore(name) || alwaysIgnored.has(name)) {
-        return;
-      }
-
-      if (name.indexOf('.') === 0) {
-        const abs = resolve.sync(name, {
+    precinct.paperwork(currentLocalFile, { includeCore: false }).forEach(dependency => {
+      if (dependency.indexOf('.') === 0) {
+        const abs = resolve.sync(dependency, {
           basedir: path.dirname(currentLocalFile)
         });
         localFilesToProcess.push(abs);
       } else {
-        const moduleName = requirePackageName(name.replace(/\\/, '/'));
-        const pathToModule = resolvePkg(moduleName, {
-          cwd: servicePath
-        });
-
-        if (pathToModule) {
-          if (utils.isOutside(servicePath, pathToModule)) {
-            invalidReference(pathToModule);
-          }
-          modulePaths.add(pathToModule);
-        } else {
-          if (ignoreMissing(moduleName)) {
-            return;
-          }
-          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${moduleName}`);
-        }
+        handle(dependency, servicePath);
       }
     });
   }
 
-  const modulePathsToProcess = Array.from(modulePaths);
-
-  modulePaths.clear();
-
-  while (modulePathsToProcess.length) {
-    const currentModulePath = modulePathsToProcess.pop();
+  while (modulesToProcess.length) {
+    const currentModule = modulesToProcess.pop();
+    const currentModulePath = path.join(currentModule.path, '..');
 
     if (modulePaths.has(currentModulePath)) {
       continue;
@@ -81,33 +80,14 @@ module.exports = function(filename, serverless) {
 
     modulePaths.add(currentModulePath);
 
-    const packageJson = require(path.join(currentModulePath, 'package.json'));
+    const packageJson = currentModule.pkg;
 
     ['dependencies', 'peerDependencies', 'optionalDependencies'].forEach(key => {
       const dependencies = packageJson[key];
 
       if (dependencies) {
         Object.keys(dependencies).forEach(dependency => {
-          if (alwaysIgnored.has(dependency)) {
-            return;
-          }
-
-          const pathToModule = resolvePkg(dependency, {
-            cwd: currentModulePath
-          });
-
-          if (pathToModule) {
-            if (utils.isOutside(servicePath, pathToModule)) {
-              invalidReference(pathToModule);
-            }
-            modulePathsToProcess.push(pathToModule);
-          } else {
-            if (ignoreMissing(dependency, packageJson.optionalDependencies)) {
-              serverless.cli.log(`[serverless-plugin-include-dependencies]: WARNING missing optional dependency: ${dependency}`);
-              return;
-            }
-            throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${key}:${dependency}`);
-          }
+          handle(dependency, currentModulePath, packageJson.optionalDependencies);
         });
       }
     });

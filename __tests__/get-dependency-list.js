@@ -122,14 +122,6 @@ test('throws on missing peerDependencies', (t) => {
 
   const error = t.throws(() => getDependencyList(fileName, serverless));
 
-  t.is(error.message, '[serverless-plugin-include-dependencies]: Could not find peerDependencies:wont-find-me');
+  t.is(error.message, '[serverless-plugin-include-dependencies]: Could not find wont-find-me');
 });
 
-
-test('throws on outside path', (t) => {
-  const fileName = path.join(__dirname, 'fixtures', 'outside.js');
-
-  const error = t.throws(() => getDependencyList(fileName, serverless));
-
-  t.true(error.message.indexOf(`A dependency was located outside of the service directory`) !== -1);
-});
