@@ -43,7 +43,14 @@ module.exports = function(filename, serverless) {
           serverless.cli.log(`[serverless-plugin-include-dependencies]: WARNING missing optional dependency: ${moduleName}`);
           return null;
         }
-        throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${moduleName}`);
+        try {
+          // this resolves the requested import also against any set up NODE_PATH extensions, etc.
+          const resolved = require.resolve(name);
+          localFilesToProcess.push(resolved);
+          return;
+        } catch(e) {
+          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${moduleName}`);
+        }
       }
       throw e;
     }

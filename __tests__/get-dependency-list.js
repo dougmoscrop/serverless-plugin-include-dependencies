@@ -125,3 +125,11 @@ test('throws on missing peerDependencies', (t) => {
   t.is(error.message, '[serverless-plugin-include-dependencies]: Could not find wont-find-me');
 });
 
+test('understands local named dependencies', (t) => {
+  const fileName = path.join(__dirname, 'fixtures', 'dep-local-named.js');
+
+  const list = getDependencyList(fileName, serverless);
+
+  t.true(list.some(item => item.endsWith('dep-local-named.js')));
+  t.true(list.some(item => item.endsWith('local/named/index.js')));
+});

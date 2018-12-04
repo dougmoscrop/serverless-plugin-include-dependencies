@@ -17,7 +17,7 @@
   ],
   "main": "include-dependencies.js",
   "scripts": {
-    "test": "nyc --all ava",
+    "test": "NODE_PATH=\"__tests__/fixtures/additional_node_path:${NODE_PATH:-}\" nyc --all ava",
     "posttest": "eslint .",
     "preversion": "update contributors",
     "prepublish": "git push origin master; git push origin --tags"
