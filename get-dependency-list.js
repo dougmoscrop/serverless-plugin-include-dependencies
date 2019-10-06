@@ -8,10 +8,8 @@ const readPkgUp = require('read-pkg-up');
 const requirePackageName = require('require-package-name');
 const glob = require('glob');
 
-const alwaysIgnored = new Set(['aws-sdk']);
-
 function ignoreMissing(dependency, optional) {
-  return alwaysIgnored.has(dependency) || (optional && dependency in optional);
+  return optional && dependency in optional;
 }
 
 module.exports = function(filename, serverless) {
@@ -25,10 +23,6 @@ module.exports = function(filename, serverless) {
 
   function handle(name, basedir, optionalDependencies) {
     const moduleName = requirePackageName(name.replace(/\\/, '/'));
-
-    if (alwaysIgnored.has(moduleName)) {
-      return;
-    }
 
     try {
       const pathToModule = resolve.sync(path.join(moduleName, 'package.json'), { basedir });
