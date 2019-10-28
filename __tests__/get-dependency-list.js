@@ -83,31 +83,6 @@ test('should handle requires to a missing optionalDependency listed in dependenc
   t.true(log.called);
 });
 
-test('should handle requires with aws-sdk -- when missing', (t) => {
-  const fileName = path.join(__dirname, 'fixtures', 'missing-aws-sdk', 'entry.js');
-
-  const list = getDependencyList(fileName, serverless);
-
-  t.true(list.some(item => item.indexOf(`entry.js`) !== -1));
-});
-
-test('should handle requires with aws-sdk -- ignores when missing', (t) => {
-  const fileName = path.join(__dirname, 'fixtures', 'missing-aws-sdk', 'entry.js');
-
-  const list = getDependencyList(fileName, serverless);
-
-  t.true(list.some(item => item.indexOf(`entry.js`) !== -1));
-});
-
-test('should handle requires with aws-sdk -- does not include when found', (t) => {
-  const fileName = path.join(__dirname, 'fixtures', 'finds-aws-sdk', 'entry.js');
-
-  const list = getDependencyList(fileName, serverless);
-
-  t.true(list.some(item => item.indexOf(`entry.js`) !== -1));
-  t.false(list.some(item => item.indexOf(`fail-if-found.js`) !== -1));
-});
-
 test('includes a dependency with peerDependencies', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'dep-with-peer.js');
 
