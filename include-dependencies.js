@@ -54,7 +54,7 @@ module.exports = class IncludeDependencies {
     service.package = service.package || {};
     service.package.exclude = union(service.package.exclude, ['node_modules/**']);
 
-    if (runtime.match(/nodejs*/)) {
+    if (runtime === 'provided' || runtime.match(/nodejs*/)) {
       this.processIncludes(functionObject);
       this.processNodeFunction(functionObject);
     }

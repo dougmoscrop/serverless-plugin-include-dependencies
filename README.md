@@ -1,5 +1,7 @@
 # serverless-plugin-include-dependencies
 
+> Note: This plugin no longer excludes the `aws-sdk` to stay in line with AWS best practices (bring your own SDK)
+
 This is a Serverless plugin that should make your deployed functions smaller.
 
 It does this by enabling you to add your `node_modules` folder to the `exclude` list, then it individually adds each module that your handler depends on.
