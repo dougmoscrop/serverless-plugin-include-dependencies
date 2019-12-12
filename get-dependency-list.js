@@ -8,8 +8,9 @@ const readPkgUp = require('read-pkg-up');
 const requirePackageName = require('require-package-name');
 const glob = require('glob');
 
-function ignoreMissing(dependency, optional) {
-  return optional && dependency in optional;
+function ignoreMissing(dependency, optional, peerDependenciesMeta) {
+  return optional && dependency in optional 
+    || peerDependenciesMeta && dependency in peerDependenciesMeta && peerDependenciesMeta[dependency].optional;
 }
 
 module.exports = function(filename, serverless) {
