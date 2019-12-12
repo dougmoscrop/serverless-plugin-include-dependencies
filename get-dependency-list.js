@@ -9,7 +9,7 @@ const requirePackageName = require('require-package-name');
 const glob = require('glob');
 
 function ignoreMissing(dependency, optional, peerDependenciesMeta) {
-  return optional && dependency in optional 
+  return optional && dependency in optional
     || peerDependenciesMeta && dependency in peerDependenciesMeta && peerDependenciesMeta[dependency].optional;
 }
 
@@ -22,7 +22,7 @@ module.exports = function(filename, serverless) {
   const modulesToProcess = [];
   const localFilesToProcess = [filename];
 
-  function handle(name, basedir, optionalDependencies) {
+  function handle(name, basedir, optionalDependencies, peerDependenciesMeta) {
     const moduleName = requirePackageName(name.replace(/\\/, '/'));
 
     try {
@@ -34,7 +34,7 @@ module.exports = function(filename, serverless) {
       }
     } catch (e) {
       if (e.code === 'MODULE_NOT_FOUND') {
-        if (ignoreMissing(moduleName, optionalDependencies)) {
+        if (ignoreMissing(moduleName, optionalDependencies, peerDependenciesMeta)) {
           serverless.cli.log(`[serverless-plugin-include-dependencies]: WARNING missing optional dependency: ${moduleName}`);
           return null;
         }
@@ -89,7 +89,7 @@ module.exports = function(filename, serverless) {
 
       if (dependencies) {
         Object.keys(dependencies).forEach(dependency => {
-          handle(dependency, currentModulePath, packageJson.optionalDependencies);
+          handle(dependency, currentModulePath, packageJson.optionalDependencies, packageJson.peerDependenciesMeta);
         });
       }
     });
