@@ -83,7 +83,7 @@ module.exports = function(filename, serverless) {
 
     modulePaths.add(currentModulePath);
 
-    const packageJson = currentModule.pkg;
+    const { packageJson } = currentModule;
 
     ['dependencies', 'peerDependencies', 'optionalDependencies'].forEach(key => {
       const dependencies = packageJson[key];
