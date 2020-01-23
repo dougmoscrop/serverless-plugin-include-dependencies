@@ -139,14 +139,12 @@ module.exports = class IncludeDependencies {
     const dependencies = this.getDependencyList(fileName);
 
     const relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
+    const exclusions = exclude.filter(e => {
+      return !(e.indexOf('node_modules') !== 0 || e === 'node_modules' || e === 'node_modules/**');
+    });
 
     return relativeDependencies.filter(p => {
-      return !exclude.some(e => {
-        if (e.indexOf('node_modules') !== 0 || e === 'node_modules' || e === 'node_modules/**') {
-          return false;
-        }
-        return micromatch.contains(p, e);
-      });
+      return !micromatch.some(p, exclusions);
     });
   }
 
