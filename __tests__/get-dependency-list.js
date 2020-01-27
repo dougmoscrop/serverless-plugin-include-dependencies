@@ -83,6 +83,17 @@ test('should handle requires to a missing optionalDependency listed in dependenc
   t.true(log.called);
 });
 
+test('should handle requires to a missing peerDependency listed in peerDependenciesMeta as optional', (t) => {
+  const fileName = path.join(__dirname, 'fixtures', 'optional-dep-meta-missing.js');
+  const log = sinon.stub();
+
+  const list = getDependencyList(fileName, Object.assign({ cli: { log } }, serverless));
+
+  t.true(list.some(item => item.indexOf(`optional-dep-meta-missing.js`) !== -1));
+  t.true(list.some(item => item.indexOf(`node_modules/optional-dep-meta-parent/index.js`) !== -1));
+  t.true(log.called);
+});
+
 test('includes a dependency with peerDependencies', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'dep-with-peer.js');
 
