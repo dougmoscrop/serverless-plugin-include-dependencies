@@ -359,7 +359,7 @@ test('getDependencies should handle excluding an entire module', t => {
   const instance = createTestInstance();
   const file = path.join(__dirname, 'fixtures', 'thing.js');
   const dependencies = instance.getDependencies(file, [
-    'node_modules/**/jwk-to-pem'
+    'node_modules/**/jwk-to-pem/**'
   ]);
 
   t.true(Array.isArray(dependencies));

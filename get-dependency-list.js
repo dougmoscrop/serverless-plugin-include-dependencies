@@ -31,6 +31,8 @@ module.exports = function(filename, serverless) {
 
       if (pkg) {
         modulesToProcess.push(pkg);
+      } else {
+        // TODO: should we warn here?
       }
     } catch (e) {
       if (e.code === 'MODULE_NOT_FOUND') {
@@ -82,7 +84,7 @@ module.exports = function(filename, serverless) {
 
     modulePaths.add(currentModulePath);
 
-    const packageJson = currentModule.pkg;
+    const { packageJson } = currentModule;
 
     ['dependencies', 'peerDependencies', 'optionalDependencies'].forEach(key => {
       const dependencies = packageJson[key];
