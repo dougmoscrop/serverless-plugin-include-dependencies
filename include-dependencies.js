@@ -23,7 +23,7 @@ module.exports = class IncludeDependencies {
 
     this.serverless = serverless;
     this.options = options;
-    this.globalCache = new Set();
+    this.cache = new Set();
 
     const service = this.serverless.service;
     this.individually = service.package && service.package.individually;
@@ -153,12 +153,16 @@ module.exports = class IncludeDependencies {
   }
 
   getDependencyList(fileName) {
-    const cache = this.individually ? new Set() : this.globalCache;
-    return getDependencyList(fileName, this.serverless, cache);
+    if (!this.individually) {
+      const options = this.getPluginOptions();
+      if (options && options.enableCaching) {
+        return getDependencyList(fileName, this.serverless, this.cache);
+      }
+    }
+    return getDependencyList(fileName, this.serverless);
   }
 
   include(target, dependencies) {
     target.package.include = union(target.package.include, dependencies);
   }
-
 };

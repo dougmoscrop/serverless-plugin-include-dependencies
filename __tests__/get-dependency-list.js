@@ -121,15 +121,18 @@ test('understands local named dependencies', (t) => {
 });
 
 test('caches lookups', (t) => {
-  const fileName = path.join(__dirname, 'fixtures', 'dep-local-named.js');
-  const fileName2 = path.join(__dirname, 'fixtures', 'dep-local-named-2.js');
+  const fileName = path.join(__dirname, 'fixtures', 'redundancies-1.js');
+  const fileName2 = path.join(__dirname, 'fixtures', 'redundancies-2.js');
 
   const cache = new Set();
   const list1 = getDependencyList(fileName, serverless, cache);
   const list2 = getDependencyList(fileName2, serverless, cache);
 
-  t.true(list1.some(item => item.endsWith('dep-local-named.js')));
   t.true(list1.some(item => item.endsWith('local/named/index.js')));
-  t.true(list2.some(item => item.endsWith('dep-local-named-2.js')));
+  t.true(list1.some(item => item.endsWith('symlinked.js')));
+  t.true(list1.some(item => item.endsWith('node_modules/test-dep/test-dep.js')));
+
   t.false(list2.some(item => item.endsWith('local/named/index.js')));
+  t.false(list2.some(item => item.endsWith('symlinked.js')));
+  t.false(list2.some(item => item.endsWith('test-dep.js')));
 });

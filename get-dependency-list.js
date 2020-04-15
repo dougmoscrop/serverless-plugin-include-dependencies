@@ -13,22 +13,23 @@ function ignoreMissing(dependency, optional, peerDependenciesMeta) {
     || peerDependenciesMeta && dependency in peerDependenciesMeta && peerDependenciesMeta[dependency].optional;
 }
 
-module.exports = function(filename, serverless, _cache) {
+module.exports = function(filename, serverless, cache) {
   const servicePath = serverless.config.servicePath;
   const modulePaths = new Set();
   const filePaths = new Set();
-  const cache = _cache || new Set();
   const modulesToProcess = [];
   const localFilesToProcess = [filename];
 
   function handle(name, basedir, optionalDependencies, peerDependenciesMeta) {
     const moduleName = requirePackageName(name.replace(/\\/, '/'));
 
-    if (cache.has(`${basedir}:${name}`)) {
-      return;
+    if (cache) {
+      const cacheKey = `${basedir}:${name}`;
+      if (cache.has(cacheKey)) {
+        return;
+      }
+      cache.add(cacheKey);
     }
-
-    cache.add(`${basedir}:${name}`);
 
     try {
       const pathToModule = resolve.sync(path.join(moduleName, 'package.json'), { basedir });
