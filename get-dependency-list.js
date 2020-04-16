@@ -22,13 +22,10 @@ module.exports = function(filename, serverless, cache) {
 
   function handle(name, basedir, optionalDependencies, peerDependenciesMeta) {
     const moduleName = requirePackageName(name.replace(/\\/, '/'));
+    const cacheKey = `${basedir}:${name}`;
 
-    if (cache) {
-      const cacheKey = `${basedir}:${name}`;
-      if (cache.has(cacheKey)) {
-        return;
-      }
-      cache.add(cacheKey);
+    if (cache && cache.has(cacheKey)) {
+      return;
     }
 
     try {
@@ -37,6 +34,11 @@ module.exports = function(filename, serverless, cache) {
 
       if (pkg) {
         modulesToProcess.push(pkg);
+
+        if (cache) {
+          cache.add(cacheKey);
+        }
+  
       } else {
         // TODO: should we warn here?
       }
@@ -50,6 +52,11 @@ module.exports = function(filename, serverless, cache) {
           // this resolves the requested import also against any set up NODE_PATH extensions, etc.
           const resolved = require.resolve(name);
           localFilesToProcess.push(resolved);
+
+          if (cache) {
+            cache.add(cacheKey);
+          }
+
           return;
         } catch(e) {
           throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${moduleName}`);
