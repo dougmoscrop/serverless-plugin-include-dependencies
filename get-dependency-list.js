@@ -24,6 +24,10 @@ module.exports = function(filename, serverless) {
 
   function handle(name, basedir, optionalDependencies, peerDependenciesMeta) {
     const moduleName = requirePackageName(name.replace(/\\/, '/'));
+    if (moduleName === null) {
+      console.log(`[serverless-plugin-include-dependencies]: Module not found, skipping ${name}`);
+      return null;
+    }
 
     try {
       const pathToModule = resolve.sync(path.join(moduleName, 'package.json'), { basedir });
