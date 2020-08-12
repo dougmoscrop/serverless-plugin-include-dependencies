@@ -63,6 +63,17 @@ package:
 ```
 But be warned: Smaller individual functions can still mean a larger overall deployment. (10 functions that are 3 MB each is more net data tranfer and storage than 1 function that is 6 MB)
 
+## Dependency caching (Experimental)
+
+When building a shared bundle for several functions, execution time can be reduced by enabling dependency caching. Caching is disabled by default and can be enabled using the `enableCaching` option:
+
+```yaml
+custom:
+  includeDependencies:
+    enableCaching: true
+```
+
+
 ## New In 2.0 - Exclusion Support
 
 Rather than including module folders (e.g. `node_modules/foo/**`, it now includes a list of actual files (e.g. `node_modules/foo/package.json`, `node_modules/foo/index.js`) and *uses the serverless package exclude* to filter these files. Excludes *must* start with `node_modules` to be considered by this plugin.

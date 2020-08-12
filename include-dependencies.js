@@ -23,6 +23,10 @@ module.exports = class IncludeDependencies {
 
     this.serverless = serverless;
     this.options = options;
+    this.cache = new Set();
+
+    const service = this.serverless.service;
+    this.individually = service.package && service.package.individually;
 
     this.hooks = {
       'before:deploy:function:packageFunction': this.functionDeploy.bind(this),
@@ -93,7 +97,7 @@ module.exports = class IncludeDependencies {
       return;
     }
     const include = union(options.always, []);
-    if (service.package && service.package.individually) {
+    if (this.individually) {
       const exclude = union(service.package.exclude, functionObject.package.exclude);
       this.includeGlobs(functionObject, include, exclude);
     } else {
@@ -107,7 +111,7 @@ module.exports = class IncludeDependencies {
 
     const fileName = this.getHandlerFilename(functionObject.handler);
 
-    if (service.package && service.package.individually) {
+    if (this.individually) {
       const exclude = union(service.package.exclude, functionObject.package.exclude);
       const dependencies = this.getDependencies(fileName, exclude);
 
@@ -149,11 +153,16 @@ module.exports = class IncludeDependencies {
   }
 
   getDependencyList(fileName) {
+    if (!this.individually) {
+      const options = this.getPluginOptions();
+      if (options && options.enableCaching) {
+        return getDependencyList(fileName, this.serverless, this.cache);
+      }
+    }
     return getDependencyList(fileName, this.serverless);
   }
 
   include(target, dependencies) {
     target.package.include = union(target.package.include, dependencies);
   }
-
 };

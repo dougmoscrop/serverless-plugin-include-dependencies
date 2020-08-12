@@ -415,3 +415,21 @@ test('processFunction should handle different runtimes', t => {
 
   t.true(processNode.calledTwice);
 });
+
+test('disables caching by default', t => {
+  const instance = createTestInstance();
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const list1 = instance.getDependencies(file, []);
+  const list2 = instance.getDependencies(file, []);
+  t.deepEqual(list1, list2);
+});
+
+test('enables caching', t => {
+  const instance = createTestInstance({
+    service: { custom: { includeDependencies: { enableCaching: true } } }
+  });
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const list1 = instance.getDependencies(file, []);
+  const list2 = instance.getDependencies(file, []);
+  t.true(list2.length < list1.length);
+});
