@@ -130,7 +130,8 @@ module.exports = class IncludeDependencies {
   }
 
   getHandlerFilename(handler) {
-    const handlerPath = handler.slice(0, handler.lastIndexOf('.'));
+    const lastDotIndex = handler.lastIndexOf('.');
+    const handlerPath = lastDotIndex !== -1 ? handler.slice(0, lastDotIndex) : 'index';
     return require.resolve((path.join(this.serverless.config.servicePath, handlerPath)));
   }
 

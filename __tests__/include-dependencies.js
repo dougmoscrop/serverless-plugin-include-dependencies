@@ -267,6 +267,12 @@ test('processFunction should include individually', t => {
   ]);
 });
 
+test('getHandlerFilename should default to index where there is no . in the handler name', t => {
+  const instance = createTestInstance();
+
+  t.deepEqual(instance.getHandlerFilename('https'), path.join(__dirname, 'fixtures', 'index.js'));
+});
+
 test('getHandlerFilename should handle a simple handler expression', t => {
   const instance = createTestInstance();
 
