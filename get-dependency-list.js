@@ -59,7 +59,7 @@ module.exports = function(filename, serverless, cache) {
 
           return;
         } catch(e) {
-          throw new Error(`[serverless-plugin-include-dependencies]: Could not find ${moduleName}`);
+          throw new Error(`[serverless-plugin-include-dependencies]: Could not find npm package: ${moduleName}`);
         }
       }
       throw e;
