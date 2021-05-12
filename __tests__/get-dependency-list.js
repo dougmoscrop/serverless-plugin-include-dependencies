@@ -108,7 +108,7 @@ test('throws on missing peerDependencies', (t) => {
 
   const error = t.throws(() => getDependencyList(fileName, serverless));
 
-  t.is(error.message, '[serverless-plugin-include-dependencies]: Could not find wont-find-me');
+  t.is(error.message, '[serverless-plugin-include-dependencies]: Could not find npm package: wont-find-me');
 });
 
 test('understands local named dependencies', (t) => {
