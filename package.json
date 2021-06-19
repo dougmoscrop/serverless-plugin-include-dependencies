@@ -22,16 +22,16 @@
   },
   "devDependencies": {
     "ava": "^3.0.0",
-    "eslint": "^6.8.0",
+    "eslint": "^7.29.0",
     "lodash": "^4.17.11",
     "nyc": "^15.0.0",
-    "sinon": "^8.1.1",
+    "sinon": "^11.1.1",
     "updater-contributors": "^0.1.2"
   },
   "dependencies": {
     "glob": "^7.1.6",
     "micromatch": "^4.0.2",
-    "precinct": "^6.2.0",
+    "precinct": "^8.1.0",
     "read-pkg-up": "^7.0.1",
     "require-package-name": "^2.0.1",
     "resolve": "^1.15.0",
