@@ -57,7 +57,7 @@ For even smaller function packages, you can also set:
 package:
   individually: true
 ```
-But be warned: Smaller individual functions can still mean a larger overall deployment. (10 functions that are 3 MB each is more net data tranfer and storage than 1 function that is 6 MB)
+But be warned: Smaller individual functions can still mean a larger overall deployment. (10 functions that are 3 MB each is more net data transfer and storage than 1 function that is 6 MB)
 
 ## Dependency caching (Experimental)
 
