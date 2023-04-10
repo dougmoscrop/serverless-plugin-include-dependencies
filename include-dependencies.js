@@ -4,6 +4,7 @@ const path = require('path');
 
 const semver = require('semver');
 const micromatch = require('micromatch');
+const glob = require('glob');
 
 const getDependencyList = require('./get-dependency-list');
 
@@ -53,6 +54,19 @@ module.exports = class IncludeDependencies {
     for (const functionName in functions) {
       this.processFunction(functionName);
     }
+
+    const filesNeedImporting = this.getIncludeRequires();
+
+    const importFiles = filesNeedImporting.map(modulePath => glob.sync(path.join(modulePath, '**'), {
+        nodir: true,
+        ignore: path.join(modulePath, 'node_modules', '**'),
+        absolute: false
+    })).flat();
+
+    importFiles.forEach(fileName => {
+        const dependencies = this.getDependencies(fileName, service.package.patterns);
+        service.package.patterns = union(service.package.patterns, dependencies);
+    });
   }
 
   processFunction(functionName) {
@@ -69,6 +83,11 @@ module.exports = class IncludeDependencies {
     }
   }
 
+  getIncludeRequires() {
+    const service = this.serverless.service;
+    return (service.package && service.package.includeRequires) || {};
+  }
+
   getPluginOptions() {
     const service = this.serverless.service;
     return (service.custom && service.custom.includeDependencies) || {};
@@ -78,7 +97,7 @@ module.exports = class IncludeDependencies {
     const { service } = this.serverless;
 
     functionObject.package = functionObject.package || {};
-    
+
     const fileName = this.getHandlerFilename(functionObject.handler);
     const dependencies = this.getDependencies(fileName, service.package.patterns);
 
