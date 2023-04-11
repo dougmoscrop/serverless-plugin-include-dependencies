@@ -8,6 +8,10 @@ const sinon = require('sinon');
 
 const IncludeDependencies = require('../include-dependencies.js');
 
+function convertSlashes(paths) {
+  return paths.map(name => name.replaceAll('\\\\', '/')).map(name => name.replaceAll('\\', '/'));
+}
+
 function createTestInstance(serverless, options) {
   return new IncludeDependencies(
     _.merge({
@@ -69,13 +73,14 @@ test('createDeploymentArtifacts should call processFunction with function name',
 });
 
 test('createDeploymentArtifacts should call getDependencies for patterns files', t => {
+  const fileName = path.join(__dirname, 'fixtures', 'thing.js');
   const instance = createTestInstance({
     service: {
       provider: {
         runtime: 'nodejs18.x',
       },
       package: {
-        patterns: ['file1.js', 'file2.js', '!test']
+        patterns: [fileName]
       }
     }
   });
@@ -89,9 +94,8 @@ test('createDeploymentArtifacts should call getDependencies for patterns files',
   t.deepEqual(processFunctionSpy.calledWith('a'), true);
   t.deepEqual(processFunctionSpy.calledWith('b'), true);
 
-  t.deepEqual(dependencyListSpy.calledTwice, true);
-  t.deepEqual(processFunctionSpy.calledWith('file1.js'), true);
-  t.deepEqual(processFunctionSpy.calledWith('file2.js'), true);
+  t.deepEqual(dependencyListSpy.callCount, 1);
+  t.deepEqual(dependencyListSpy.calledWith(fileName), true);
 });
 
 test('processFunction should exclude node_modules when no package defined', t => {
@@ -105,26 +109,6 @@ test('processFunction should exclude node_modules when no package defined', t =>
   t.deepEqual(instance.serverless.service.package.patterns, ['!node_modules/**']);
 });
 
-test('processFunction should exclude node_modules when no package defined', t => {
-  const instance = createTestInstance({
-    service: {
-      provider: {
-        runtime: 'nodejs18.x',
-      },
-      package: {
-        patterns: ['file1.js']
-      }
-    }
-  });
-
-  sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
-  const stub = sinon.stub(instance, 'getDependencies').returns([]);
-  stub.withArgs('file1.js').returns(path.join('node_modules', 'brightspace-auth-validation', 'index.js'));
-
-  instance.createDeploymentArtifacts();
-
-  t.deepEqual(instance.serverless.service.package.patterns, ['!node_modules/**', 'node_modules/brightspace-auth-validation/index.js']);
-});
 
 test('processFunction should add node_modules ignore to package patterns', t => {
   const instance = createTestInstance({
@@ -163,7 +147,7 @@ test('processFunction should add to package include', t => {
 
   instance.processFunction('a');
 
-  t.deepEqual(instance.serverless.service.package.patterns, [
+  t.deepEqual(convertSlashes(instance.serverless.service.package.patterns), [
     '!node_modules/**',
     '.something',
     'node_modules/brightspace-auth-validation/index.js',
@@ -171,7 +155,7 @@ test('processFunction should add to package include', t => {
   ]);
 });
 
-test('processFunction should imports for patterns', t => {
+test('processFunction should import for patterns', t => {
   const instance = createTestInstance({
     service: {
       provider: {
@@ -189,8 +173,9 @@ test('processFunction should imports for patterns', t => {
     path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
   ]);
 
+  instance.processFunction('a');
 
-  t.deepEqual(instance.serverless.service.package.patterns, [
+  t.deepEqual(convertSlashes(instance.serverless.service.package.patterns), [
     '!node_modules/**',
     '.something',
     'node_modules/brightspace-auth-validation/index.js',
@@ -230,7 +215,7 @@ test('processFunction should include individually', t => {
     '!node_modules/**',
     '.something',
   ]);
-  t.deepEqual(instance.serverless.service.functions.a.package.patterns, [
+  t.deepEqual(convertSlashes(instance.serverless.service.functions.a.package.patterns), [
     '.something-else',
     'node_modules/brightspace-auth-validation/index.js',
     'node_modules/brightspace-auth-validation/node_modules/jws/index.js'
@@ -294,9 +279,9 @@ test('getDependencies should handle exclude of a file within a dependency', t =>
 test('getDependencies should ignore excludes that do not start with node_modules', t => {
   const instance = createTestInstance();
   const file = path.join(__dirname, 'fixtures', 'thing.js');
-  const dependencies = instance.getDependencies(file, [
+  const dependencies = convertSlashes(instance.getDependencies(file, [
     '**/LICENSE'
-  ]);
+  ]));
 
   t.true(Array.isArray(dependencies));
   t.true(dependencies.length > 0);
@@ -396,6 +381,8 @@ test('disables caching by default', t => {
   const instance = createTestInstance();
   const file = path.join(__dirname, 'fixtures', 'thing.js');
   const list1 = instance.getDependencies(file, []);
+  instance.checkedFiles.clear(); // clear would be called when through createDeploymentArtifacts
+
   const list2 = instance.getDependencies(file, []);
   t.deepEqual(list1, list2);
 });
@@ -406,6 +393,7 @@ test('enables caching', t => {
   });
   const file = path.join(__dirname, 'fixtures', 'thing.js');
   const list1 = instance.getDependencies(file, []);
+  instance.checkedFiles.clear();
   const list2 = instance.getDependencies(file, []);
   t.true(list2.length < list1.length);
 });
