@@ -68,6 +68,32 @@ test('createDeploymentArtifacts should call processFunction with function name',
   t.deepEqual(spy.calledWith('b'), true);
 });
 
+test('createDeploymentArtifacts should call getDependencies for patterns files', t => {
+  const instance = createTestInstance({
+    service: {
+      provider: {
+        runtime: 'nodejs18.x',
+      },
+      package: {
+        patterns: ['file1.js', 'file2.js', '!test']
+      }
+    }
+  });
+
+  const processFunctionSpy = sinon.stub(instance, 'processFunction');
+  const dependencyListSpy = sinon.stub(instance, 'getDependencyList');
+
+  instance.createDeploymentArtifacts();
+
+  t.deepEqual(processFunctionSpy.calledTwice, true);
+  t.deepEqual(processFunctionSpy.calledWith('a'), true);
+  t.deepEqual(processFunctionSpy.calledWith('b'), true);
+
+  t.deepEqual(dependencyListSpy.calledTwice, true);
+  t.deepEqual(processFunctionSpy.calledWith('file1.js'), true);
+  t.deepEqual(processFunctionSpy.calledWith('file2.js'), true);
+});
+
 test('processFunction should exclude node_modules when no package defined', t => {
   const instance = createTestInstance();
 
@@ -77,6 +103,27 @@ test('processFunction should exclude node_modules when no package defined', t =>
   instance.processFunction('a');
 
   t.deepEqual(instance.serverless.service.package.patterns, ['!node_modules/**']);
+});
+
+test('processFunction should exclude node_modules when no package defined', t => {
+  const instance = createTestInstance({
+    service: {
+      provider: {
+        runtime: 'nodejs18.x',
+      },
+      package: {
+        patterns: ['file1.js']
+      }
+    }
+  });
+
+  sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
+  const stub = sinon.stub(instance, 'getDependencies').returns([]);
+  stub.withArgs('file1.js').returns(path.join('node_modules', 'brightspace-auth-validation', 'index.js'));
+
+  instance.createDeploymentArtifacts();
+
+  t.deepEqual(instance.serverless.service.package.patterns, ['!node_modules/**', 'node_modules/brightspace-auth-validation/index.js']);
 });
 
 test('processFunction should add node_modules ignore to package patterns', t => {
@@ -115,6 +162,33 @@ test('processFunction should add to package include', t => {
   ]);
 
   instance.processFunction('a');
+
+  t.deepEqual(instance.serverless.service.package.patterns, [
+    '!node_modules/**',
+    '.something',
+    'node_modules/brightspace-auth-validation/index.js',
+    'node_modules/brightspace-auth-validation/node_modules/jws/index.js'
+  ]);
+});
+
+test('processFunction should imports for patterns', t => {
+  const instance = createTestInstance({
+    service: {
+      provider: {
+        runtime: 'nodejs14.x',
+      },
+      package: {
+        patterns: ['.something']
+      }
+    }
+  });
+
+  sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
+  sinon.stub(instance, 'getDependencies').returns([
+    path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
+    path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
+  ]);
+
 
   t.deepEqual(instance.serverless.service.package.patterns, [
     '!node_modules/**',
