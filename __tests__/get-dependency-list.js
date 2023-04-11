@@ -13,7 +13,7 @@ const serverless = {
 };
 
 function convertSlashes(paths) {
-  return paths.map(name => name.replaceAll('\\\\', '/')).map(name => name.replaceAll('\\', '/'));
+  return paths.map(name => name.replaceAll('\\', '/'));
 }
 
 test('includes a deep dependency', (t) => {

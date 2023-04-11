@@ -9,10 +9,10 @@ const sinon = require('sinon');
 const IncludeDependencies = require('../include-dependencies.js');
 
 function convertSlashes(paths) {
-  return paths.map(name => name.replaceAll('\\\\', '/')).map(name => name.replaceAll('\\', '/'));
+  return paths.map(name => name.replaceAll('\\', '/'));
 }
 
-function createTestInstance(serverless, options) {
+function createTestInstance(serverless, options, functions = {a: {}, b: {}}) {
   return new IncludeDependencies(
     _.merge({
       version: '2.32.0',
@@ -20,10 +20,7 @@ function createTestInstance(serverless, options) {
         servicePath: path.join(__dirname, 'fixtures')
       },
       service: {
-        functions: {
-          a: {},
-          b: {}
-        }
+        functions
       }
     }, serverless),
     _.merge({}, options)
@@ -73,7 +70,7 @@ test('createDeploymentArtifacts should call processFunction with function name',
 });
 
 test('createDeploymentArtifacts should call getDependencies for patterns files', t => {
-  const fileName = path.join(__dirname, 'fixtures', 'thing.js');
+  const fileName = path.join(__dirname, 'fixtures', 'thing.js').replaceAll('\\', '/');
   const instance = createTestInstance({
     service: {
       provider: {
@@ -128,34 +125,6 @@ test('processFunction should add node_modules ignore to package patterns', t => 
 });
 
 test('processFunction should add to package include', t => {
-  const instance = createTestInstance({
-    service: {
-      provider: {
-        runtime: 'nodejs14.x',
-      },
-      package: {
-        patterns: ['.something']
-      }
-    }
-  });
-
-  sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
-  sinon.stub(instance, 'getDependencies').returns([
-    path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
-    path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
-  ]);
-
-  instance.processFunction('a');
-
-  t.deepEqual(convertSlashes(instance.serverless.service.package.patterns), [
-    '!node_modules/**',
-    '.something',
-    'node_modules/brightspace-auth-validation/index.js',
-    'node_modules/brightspace-auth-validation/node_modules/jws/index.js'
-  ]);
-});
-
-test('processFunction should import for patterns', t => {
   const instance = createTestInstance({
     service: {
       provider: {

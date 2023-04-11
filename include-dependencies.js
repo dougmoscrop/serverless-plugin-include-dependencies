@@ -62,7 +62,7 @@ module.exports = class IncludeDependencies {
           ignore: path.join(modulePath, 'node_modules', '**'),
           absolute: true
         })
-      ).flat().map(file => file.replaceAll('/', "\\")))];
+      ).flat().map(file => file.replaceAll('\\', '/')))];
 
     files.forEach(fileName => {
       if (!this.checkedFiles.has(fileName)) {
