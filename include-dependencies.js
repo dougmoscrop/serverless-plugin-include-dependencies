@@ -55,15 +55,14 @@ module.exports = class IncludeDependencies {
       this.processFunction(functionName);
     }
 
-    const filesNeedImporting = this.getIncludeRequires();
+    const files = [...new Set(this.getPatterns().filter(pattern => !pattern.startsWith('!') && !pattern.includes('node_modules'))
+      .map(modulePath => glob.sync(path.join(modulePath, '**'), {
+          nodir: true,
+          ignore: path.join(modulePath, 'node_modules', '**'),
+          absolute: false
+      })).flat())];
 
-    const importFiles = filesNeedImporting.map(modulePath => glob.sync(path.join(modulePath, '**'), {
-        nodir: true,
-        ignore: path.join(modulePath, 'node_modules', '**'),
-        absolute: false
-    })).flat();
-
-    importFiles.forEach(fileName => {
+    files.forEach(fileName => {
         const dependencies = this.getDependencies(fileName, service.package.patterns);
         service.package.patterns = union(service.package.patterns, dependencies);
     });
@@ -83,9 +82,9 @@ module.exports = class IncludeDependencies {
     }
   }
 
-  getIncludeRequires() {
+  getPatterns() {
     const service = this.serverless.service;
-    return (service.package && service.package.includeRequires) || {};
+    return (service.package && service.package.patterns) || {};
   }
 
   getPluginOptions() {
