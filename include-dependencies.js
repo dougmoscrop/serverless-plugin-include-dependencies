@@ -33,6 +33,7 @@ module.exports = class IncludeDependencies {
     this.serverless = serverless;
     this.options = options;
     this.cache = new Set();
+    this.checkedFiles = new Set();
 
     const service = this.serverless.service;
     this.individually = service.package && service.package.individually;
@@ -56,16 +57,21 @@ module.exports = class IncludeDependencies {
     }
 
     const files = [...new Set(this.getPatterns().filter(pattern => !pattern.startsWith('!') && !pattern.includes('node_modules'))
-      .map(modulePath => glob.sync(path.join(modulePath, '**'), {
+      .map(modulePath => glob.sync(modulePath, {
           nodir: true,
           ignore: path.join(modulePath, 'node_modules', '**'),
-          absolute: false
-      })).flat())];
+          absolute: true
+        })
+      ).flat().map(file => file.replaceAll('/', "\\")))];
 
     files.forEach(fileName => {
+      if (!this.checkedFiles.has(fileName)) {
         const dependencies = this.getDependencies(fileName, service.package.patterns);
         service.package.patterns = union(service.package.patterns, dependencies);
+      }
     });
+
+    this.checkedFiles.clear();
   }
 
   processFunction(functionName) {
@@ -84,7 +90,7 @@ module.exports = class IncludeDependencies {
 
   getPatterns() {
     const service = this.serverless.service;
-    return (service.package && service.package.patterns) || {};
+    return (service.package && service.package.patterns) || [];
   }
 
   getPluginOptions() {
@@ -121,7 +127,7 @@ module.exports = class IncludeDependencies {
 
   getDependencies(fileName, patterns) {
     const servicePath = this.serverless.config.servicePath;
-    const dependencies = this.getDependencyList(fileName);
+    const dependencies = this.getDependencyList(fileName) || [];
     const relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
 
     const exclusions = patterns.filter(p => {
@@ -139,9 +145,9 @@ module.exports = class IncludeDependencies {
     if (!this.individually) {
       const options = this.getPluginOptions();
       if (options && options.enableCaching) {
-        return getDependencyList(fileName, this.serverless, this.cache);
+        return getDependencyList(fileName, this.serverless, this.checkedFiles, this.cache);
       }
     }
-    return getDependencyList(fileName, this.serverless);
+    return getDependencyList(fileName, this.serverless, this.checkedFiles);
   }
 };
