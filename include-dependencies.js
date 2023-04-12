@@ -4,6 +4,7 @@ const path = require('path');
 
 const semver = require('semver');
 const micromatch = require('micromatch');
+const glob = require('glob');
 
 const getDependencyList = require('./get-dependency-list');
 
@@ -32,6 +33,7 @@ module.exports = class IncludeDependencies {
     this.serverless = serverless;
     this.options = options;
     this.cache = new Set();
+    this.checkedFiles = new Set();
 
     const service = this.serverless.service;
     this.individually = service.package && service.package.individually;
@@ -53,6 +55,23 @@ module.exports = class IncludeDependencies {
     for (const functionName in functions) {
       this.processFunction(functionName);
     }
+
+    const files = [...new Set(this.getPatterns().filter(pattern => !pattern.startsWith('!') && !pattern.includes('node_modules'))
+      .map(modulePath => glob.sync(modulePath, {
+          nodir: true,
+          ignore: path.join(modulePath, 'node_modules', '**'),
+          absolute: true
+        })
+      ).flat().map(file => file.replaceAll('\\', '/')))];
+
+    files.forEach(fileName => {
+      if (!this.checkedFiles.has(fileName)) {
+        const dependencies = this.getDependencies(fileName, service.package.patterns);
+        service.package.patterns = union(service.package.patterns, dependencies);
+      }
+    });
+
+    this.checkedFiles.clear();
   }
 
   processFunction(functionName) {
@@ -69,6 +88,11 @@ module.exports = class IncludeDependencies {
     }
   }
 
+  getPatterns() {
+    const service = this.serverless.service;
+    return (service.package && service.package.patterns) || [];
+  }
+
   getPluginOptions() {
     const service = this.serverless.service;
     return (service.custom && service.custom.includeDependencies) || {};
@@ -78,7 +102,7 @@ module.exports = class IncludeDependencies {
     const { service } = this.serverless;
 
     functionObject.package = functionObject.package || {};
-    
+
     const fileName = this.getHandlerFilename(functionObject.handler);
     const dependencies = this.getDependencies(fileName, service.package.patterns);
 
@@ -103,7 +127,7 @@ module.exports = class IncludeDependencies {
 
   getDependencies(fileName, patterns) {
     const servicePath = this.serverless.config.servicePath;
-    const dependencies = this.getDependencyList(fileName);
+    const dependencies = this.getDependencyList(fileName) || [];
     const relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
 
     const exclusions = patterns.filter(p => {
@@ -121,9 +145,9 @@ module.exports = class IncludeDependencies {
     if (!this.individually) {
       const options = this.getPluginOptions();
       if (options && options.enableCaching) {
-        return getDependencyList(fileName, this.serverless, this.cache);
+        return getDependencyList(fileName, this.serverless, this.checkedFiles, this.cache);
       }
     }
-    return getDependencyList(fileName, this.serverless);
+    return getDependencyList(fileName, this.serverless, this.checkedFiles);
   }
 };

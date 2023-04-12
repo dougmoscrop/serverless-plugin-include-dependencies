@@ -13,12 +13,13 @@ function ignoreMissing(dependency, optional, peerDependenciesMeta) {
     || peerDependenciesMeta && dependency in peerDependenciesMeta && peerDependenciesMeta[dependency].optional;
 }
 
-module.exports = function(filename, serverless, cache) {
+module.exports = function(filename, serverless, checkedFiles, cache) {
   const servicePath = serverless.config.servicePath;
   const modulePaths = new Set();
   const filePaths = new Set();
   const modulesToProcess = [];
   const localFilesToProcess = [filename];
+  if (!checkedFiles) checkedFiles = new Set();
 
   function handle(name, basedir, optionalDependencies, peerDependenciesMeta) {
     const moduleName = requirePackageName(name.replace(/\\/, '/'));
@@ -38,7 +39,7 @@ module.exports = function(filename, serverless, cache) {
         if (cache) {
           cache.add(cacheKey);
         }
-  
+
       } else {
         // TODO: should we warn here?
       }
@@ -69,11 +70,12 @@ module.exports = function(filename, serverless, cache) {
   while (localFilesToProcess.length) {
     const currentLocalFile = localFilesToProcess.pop();
 
-    if (filePaths.has(currentLocalFile)) {
+    if (filePaths.has(currentLocalFile) || checkedFiles.has(currentLocalFile)) {
       continue;
     }
 
     filePaths.add(currentLocalFile);
+    checkedFiles.add(currentLocalFile);
 
     precinct.paperwork(currentLocalFile, { includeCore: false }).forEach(dependency => {
       if (dependency.indexOf('.') === 0) {
@@ -122,5 +124,5 @@ module.exports = function(filename, serverless, cache) {
     });
   });
 
-  return Array.from(filePaths);
+  return Array.from(filePaths).map(file => file.replace(/\\/, '/'));
 };

@@ -12,6 +12,10 @@ const serverless = {
   }
 };
 
+function convertSlashes(paths) {
+  return paths.map(name => name.replaceAll('\\', '/'));
+}
+
 test('includes a deep dependency', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'thing.js');
 
@@ -66,7 +70,7 @@ test('handles requiring dependency file in scoped package', (t) => {
 test('should handle requires with same relative path but different absolute path', (t) => {
   const fileName = path.join(__dirname, 'fixtures', 'same-relative-require.js');
 
-  const list = getDependencyList(fileName, serverless);
+  const list = convertSlashes(getDependencyList(fileName, serverless));
 
   t.true(list.some(item => item.indexOf(`bar/baz.js`) !== -1));
   t.true(list.some(item => item.indexOf(`foo/baz.js`) !== -1));
@@ -125,8 +129,9 @@ test('caches lookups', (t) => {
   const fileName2 = path.join(__dirname, 'fixtures', 'redundancies-2.js');
 
   const cache = new Set();
-  const list1 = getDependencyList(fileName, serverless, cache);
-  const list2 = getDependencyList(fileName2, serverless, cache);
+  const checkedFiles = new Set();
+  const list1 = getDependencyList(fileName, serverless, checkedFiles, cache);
+  const list2 = getDependencyList(fileName2, serverless, checkedFiles, cache);
 
   t.true(list1.some(item => item.endsWith('local/named/index.js')));
   t.true(list1.some(item => item.endsWith('symlinked.js')));
