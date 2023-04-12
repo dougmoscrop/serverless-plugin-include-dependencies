@@ -2,6 +2,10 @@
 
 This is a Serverless plugin that should make your deployed functions smaller. It does this by excluding `node_modules` then individually adds each module file that your handler depends on.
 
+5.1.0 introduces support for detecting dependencies of files included via package.patterns
+
+This is useful if you are dynamically importing a directory.
+
 As of 5.0.0 this plugin uses the `package.patterns` property. `always` is no longer supported as it should be possible with just package.patterns
 
 > Note: This plugin no longer excludes the `aws-sdk` to stay in line with AWS best practices (bring your own SDK)
