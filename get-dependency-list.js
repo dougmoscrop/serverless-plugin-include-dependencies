@@ -116,7 +116,8 @@ module.exports = function(filename, serverless, checkedFiles, cache) {
     const moduleFilePaths = glob.sync(path.join(modulePath, '**'), {
       nodir: true,
       ignore: path.join(modulePath, 'node_modules', '**'),
-      absolute: true
+      absolute: true,
+      windowsPathsNoEscape: true,
     });
 
     moduleFilePaths.forEach(moduleFilePath => {

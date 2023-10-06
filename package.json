@@ -29,6 +29,7 @@
     "updater-contributors": "^0.1.2"
   },
   "dependencies": {
+    "glob": "^10.3.10",
     "micromatch": "^4.0.2",
     "precinct": "^8.1.0",
     "read-pkg-up": "^7.0.1",
