@@ -2,7 +2,7 @@
   "name": "serverless-plugin-include-dependencies",
   "version": "5.2.0",
   "engines": {
-    "node": ">=18.0"
+    "node": ">=16.0"
   },
   "description": "A Serverless plugin that reduces your packaged function size",
   "author": "Doug Moscrop <doug.moscrop@gmail.com>",
