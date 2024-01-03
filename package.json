@@ -15,7 +15,7 @@
     "serverless",
     "serverless plugins"
   ],
-  "main": "include-dependencies.cjs",
+  "main": "include-dependencies.js",
   "scripts": {
     "test": "NODE_PATH=\"__tests__/fixtures/additional_node_path:${NODE_PATH:-}\" nyc --all ava",
     "posttest": "eslint ."
