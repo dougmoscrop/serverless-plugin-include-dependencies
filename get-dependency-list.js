@@ -2,7 +2,7 @@
 
 const path = require('path');
 
-const precinct = require('precinct');
+const { paperwork } = require('precinct');
 const resolve = require('resolve');
 const readPkgUp = require('read-pkg-up');
 const requirePackageName = require('require-package-name');
@@ -72,7 +72,7 @@ module.exports = function(filename, serverless, cache) {
       continue;
     }   
     filePaths.add(currentLocalFile);
-    precinct.paperwork(currentLocalFile, { includeCore: false }).forEach(dependency => {
+    paperwork(currentLocalFile, { includeCore: false }).forEach(dependency => {
       if (dependency.indexOf('.') === 0) {
         filePaths.add(dependency);
         const abs = resolve.sync(dependency, {

@@ -1,8 +1,8 @@
 {
   "name": "serverless-plugin-include-dependencies",
-  "version": "5.2.0",
+  "version": "6.0.0",
   "engines": {
-    "node": ">=16.0"
+    "node": ">=18.18"
   },
   "description": "A Serverless plugin that reduces your packaged function size",
   "author": "Doug Moscrop <doug.moscrop@gmail.com>",
@@ -15,28 +15,28 @@
     "serverless",
     "serverless plugins"
   ],
-  "main": "include-dependencies.js",
+  "main": "include-dependencies.cjs",
   "scripts": {
     "test": "NODE_PATH=\"__tests__/fixtures/additional_node_path:${NODE_PATH:-}\" nyc --all ava",
     "posttest": "eslint ."
   },
   "devDependencies": {
-    "ava": "^3.0.0",
+    "ava": "^6.0.1",
     "eslint": "^8.56.0",
-    "lodash": "^4.17.11",
-    "nyc": "^15.0.0",
-    "sinon": "^11.1.1",
+    "lodash": "^4.17.21",
+    "nyc": "^15.1.0",
+    "sinon": "^17.0.1",
     "updater-contributors": "^0.1.2",
     "proxyquire": "2.1.3"
   },
   "dependencies": {
     "glob": "^10.3.10",
-    "micromatch": "^4.0.2",
-    "precinct": "^8.1.0",
+    "micromatch": "^4.0.5",
+    "precinct": "^11.0.5",
     "read-pkg-up": "^7.0.1",
     "require-package-name": "^2.0.1",
-    "resolve": "^1.15.0",
-    "semver": "^7.1.1"
+    "resolve": "^1.22.8",
+    "semver": "^7.5.4"
   },
   "ava": {
     "files": [
