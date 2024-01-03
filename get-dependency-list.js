@@ -70,12 +70,11 @@ module.exports = function(filename, serverless, cache) {
 
     if (filePaths.has(currentLocalFile)) {
       continue;
-    }
-
+    }   
     filePaths.add(currentLocalFile);
-
     precinct.paperwork(currentLocalFile, { includeCore: false }).forEach(dependency => {
       if (dependency.indexOf('.') === 0) {
+        filePaths.add(dependency);
         const abs = resolve.sync(dependency, {
           basedir: path.dirname(currentLocalFile)
         });
