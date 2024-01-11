@@ -33,10 +33,6 @@ module.exports = class IncludeDependencies {
     this.serverless = serverless;
     this.options = options;
     this.cache = new Set();
-    this.checkedFiles = new Set();
-
-    const service = this.serverless.service;
-    this.individually = service.package && service.package.individually;
 
     this.hooks = {
       'before:deploy:function:packageFunction': this.functionDeploy.bind(this),
@@ -44,8 +40,36 @@ module.exports = class IncludeDependencies {
     };
   }
 
+  shouldPackageIndividually(functionObject) {
+    const functionObjectPkg = functionObject.package || {};
+    if (functionObjectPkg.individually === true || functionObjectPkg.individually === false) {
+      return functionObjectPkg.individually;
+    }
+    return this.serverless.service.package?.individually;
+  }
+
   functionDeploy() {
     return this.processFunction(this.options.function);
+  }
+
+  addDependenciesForTarget(target, useCache = false) {
+    const filteredPatterns = this.getPatterns(target).filter(pattern => !pattern.startsWith('!') && !pattern.includes('node_modules'));
+    const files = Array.from(new Set(filteredPatterns))
+      .map(modulePath => glob.sync(modulePath, {
+          nodir: true,
+          ignore: path.join(modulePath, 'node_modules', '**'),
+          absolute: true
+        })
+      ).flat().map(file => file.replaceAll('\\', '/'));
+
+    files.forEach(fileName => {
+        const dependencies = this.getDependencies(fileName, target.package.patterns, useCache);
+        target.package.patterns = union(target.package.patterns, dependencies);
+    });
+  }
+
+  get cacheEnabled() {
+    return this.getPluginOptions().enableCaching
   }
 
   createDeploymentArtifacts() {
@@ -56,22 +80,8 @@ module.exports = class IncludeDependencies {
       this.processFunction(functionName);
     }
 
-    const files = [...new Set(this.getPatterns().filter(pattern => !pattern.startsWith('!') && !pattern.includes('node_modules'))
-      .map(modulePath => glob.sync(modulePath, {
-          nodir: true,
-          ignore: path.join(modulePath, 'node_modules', '**'),
-          absolute: true
-        })
-      ).flat().map(file => file.replaceAll('\\', '/')))];
-
-    files.forEach(fileName => {
-      if (!this.checkedFiles.has(fileName)) {
-        const dependencies = this.getDependencies(fileName, service.package.patterns);
-        service.package.patterns = union(service.package.patterns, dependencies);
-      }
-    });
-
-    this.checkedFiles.clear();
+    const individually = this.serverless.service.package?.individually;
+    this.addDependenciesForTarget(service, !individually && this.cacheEnabled);
   }
 
   processFunction(functionName) {
@@ -88,14 +98,12 @@ module.exports = class IncludeDependencies {
     }
   }
 
-  getPatterns() {
-    const service = this.serverless.service;
-    return (service.package && service.package.patterns) || [];
+  getPatterns(target) {
+    return target.package?.patterns || [];
   }
 
   getPluginOptions() {
-    const service = this.serverless.service;
-    return (service.custom && service.custom.includeDependencies) || {};
+    return this.serverless.service.custom?.includeDependencies || {};
   }
 
   processNodeFunction(functionObject) {
@@ -104,17 +112,21 @@ module.exports = class IncludeDependencies {
     functionObject.package = functionObject.package || {};
 
     const fileName = this.getHandlerFilename(functionObject.handler);
-    const dependencies = this.getDependencies(fileName, service.package.patterns);
-
-    const target = this.individually ? functionObject : service;
+    const individually = this.shouldPackageIndividually(functionObject);
+    const enableCaching = !individually && this.getPluginOptions().enableCaching;
+    const target = individually ? functionObject : service;
+    const dependencies = this.getDependencies(fileName, target.package.patterns, enableCaching && this.cache);
     target.package.patterns = union(target.package.patterns, dependencies);
+
+    if (!individually) { return; }
+    this.addDependenciesForTarget(functionObject);
   }
 
   getFunctionRuntime(functionObject) {
     const { service } = this.serverless;
 
     const functionRuntime = functionObject.runtime;
-    const providerRuntime = service.provider && service.provider.runtime;
+    const providerRuntime = service.provider?.runtime;
 
     return functionRuntime || providerRuntime;
   }
@@ -125,9 +137,9 @@ module.exports = class IncludeDependencies {
     return require.resolve((path.join(this.serverless.config.servicePath, handlerPath)));
   }
 
-  getDependencies(fileName, patterns) {
+  getDependencies(fileName, patterns, useCache = false) {
     const servicePath = this.serverless.config.servicePath;
-    const dependencies = this.getDependencyList(fileName) || [];
+    const dependencies = getDependencyList(fileName, this.serverless, useCache && this.cache) || [];
     const relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
 
     const exclusions = patterns.filter(p => {
@@ -139,15 +151,5 @@ module.exports = class IncludeDependencies {
     }
 
     return relativeDependencies;
-  }
-
-  getDependencyList(fileName) {
-    if (!this.individually) {
-      const options = this.getPluginOptions();
-      if (options && options.enableCaching) {
-        return getDependencyList(fileName, this.serverless, this.checkedFiles, this.cache);
-      }
-    }
-    return getDependencyList(fileName, this.serverless, this.checkedFiles);
   }
 };

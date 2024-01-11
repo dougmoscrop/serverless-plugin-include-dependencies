@@ -5,15 +5,21 @@ const path = require('path');
 const _ = require('lodash');
 const test = require('ava');
 const sinon = require('sinon');
-
-const IncludeDependencies = require('../include-dependencies.js');
-
+const proxyquire = require('proxyquire');
 function convertSlashes(paths) {
   return paths.map(name => name.replaceAll('\\', '/'));
 }
+const getDependencyListStub = (result) => sinon.stub().returns(result);
 
-function createTestInstance(serverless, options, functions = {a: {}, b: {}}) {
-  return new IncludeDependencies(
+function createTestInstance({ 
+  serverless, 
+  options, 
+  functions = {a: {}, b: {}}, 
+  dependencyListStub = null
+} = {}) {
+  return new (proxyquire('../include-dependencies.js', {
+    ...dependencyListStub && { './get-dependency-list': dependencyListStub }
+  }))(
     _.merge({
       version: '2.32.0',
       config: {
@@ -28,7 +34,7 @@ function createTestInstance(serverless, options, functions = {a: {}, b: {}}) {
 }
 
 test('constructor should throw on older version', t => {
-  t.throws(() => createTestInstance({ version: '1.12.0' }));
+  t.throws(() => createTestInstance({ serverless:{ version: '1.12.0' } }));
 });
 
 test('constructor should create hooks', t => {
@@ -41,14 +47,14 @@ test('constructor should create hooks', t => {
 });
 
 test('constructor should set properties', t => {
-  const instance = createTestInstance(undefined, { function: 'some-name' });
+  const instance = createTestInstance({ options: { function: 'some-name' } });
 
   t.truthy(instance.serverless.service);
   t.truthy(instance.options.function);
 });
 
 test('functionDeploy should call processFunction with function name', t => {
-  const instance = createTestInstance(undefined, { function: 'foo' });
+  const instance = createTestInstance({ options: { function: 'foo' } });
   const spy = sinon.stub(instance, 'processFunction');
 
   instance.functionDeploy();
@@ -71,19 +77,21 @@ test('createDeploymentArtifacts should call processFunction with function name',
 
 test('createDeploymentArtifacts should call getDependencies for patterns files', t => {
   const fileName = path.join(__dirname, 'fixtures', 'thing.js').replaceAll('\\', '/');
-  const instance = createTestInstance({
-    service: {
-      provider: {
-        runtime: 'nodejs18.x',
-      },
-      package: {
-        patterns: [fileName]
+  const instance = createTestInstance({ 
+    serverless: {
+      service: {
+        provider: {
+          runtime: 'nodejs18.x',
+        },
+        package: {
+          patterns: [fileName]
+        }
       }
     }
-  });
+  }); 
 
   const processFunctionSpy = sinon.stub(instance, 'processFunction');
-  const dependencyListSpy = sinon.stub(instance, 'getDependencyList');
+  const getDependenciesSpy = sinon.stub(instance, 'getDependencies');
 
   instance.createDeploymentArtifacts();
 
@@ -91,8 +99,8 @@ test('createDeploymentArtifacts should call getDependencies for patterns files',
   t.deepEqual(processFunctionSpy.calledWith('a'), true);
   t.deepEqual(processFunctionSpy.calledWith('b'), true);
 
-  t.deepEqual(dependencyListSpy.callCount, 1);
-  t.deepEqual(dependencyListSpy.calledWith(fileName), true);
+  t.deepEqual(getDependenciesSpy.callCount, 1);
+  t.deepEqual(getDependenciesSpy.calledWith(fileName), true);
 });
 
 test('processFunction should exclude node_modules when no package defined', t => {
@@ -108,12 +116,14 @@ test('processFunction should exclude node_modules when no package defined', t =>
 
 
 test('processFunction should add node_modules ignore to package patterns', t => {
-  const instance = createTestInstance({
-    service: {
-      package: {
-        patterns: ['.something']
+  const instance = createTestInstance({ 
+    serverless: {
+      service: {
+        package: {
+          patterns: ['.something']
+        }
       }
-    }
+    } 
   });
 
   sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
@@ -125,58 +135,66 @@ test('processFunction should add node_modules ignore to package patterns', t => 
 });
 
 test('processFunction should add to package include', t => {
+  const dependencyListStubReturn = [
+    path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
+    path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
+  ];
+  const dependencyListStub = getDependencyListStub(dependencyListStubReturn);
   const instance = createTestInstance({
-    service: {
-      provider: {
-        runtime: 'nodejs14.x',
-      },
-      package: {
-        patterns: ['.something']
+    serverless: {
+      service: {
+        provider: {
+          runtime: 'nodejs18.x',
+        },
+        package: {
+          patterns: ['.something']
+        }
       }
-    }
+    },
+    dependencyListStub
   });
 
   sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
-  sinon.stub(instance, 'getDependencies').returns([
-    path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
-    path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
-  ]);
 
   instance.processFunction('a');
 
   t.deepEqual(convertSlashes(instance.serverless.service.package.patterns), [
     '!node_modules/**',
     '.something',
-    'node_modules/brightspace-auth-validation/index.js',
-    'node_modules/brightspace-auth-validation/node_modules/jws/index.js'
+    '../../node_modules/brightspace-auth-validation/index.js',
+    '../../node_modules/brightspace-auth-validation/node_modules/jws/index.js'
   ]);
 });
 
 test('processFunction should include individually', t => {
+  const dependencyListStubReturn = [
+    path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
+    path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
+  ];
+  const dependencyListStub = getDependencyListStub(dependencyListStubReturn);
   const instance = createTestInstance({
-    service: {
-      provider: {
-        runtime: 'nodejs14.x',
-      },
-      package: {
-        individually: true,
-        patterns: ['.something']
-      },
-      functions: {
-        a: {
-          package: {
-            patterns: ['.something-else']
+    serverless: {
+      service: {
+        provider: {
+          runtime: 'nodejs18.x',
+        },
+        package: {
+          individually: true,
+          patterns: ['.something']
+        },
+        functions: {
+          a: {
+            package: {
+              patterns: ['.something-else']
+            }
           }
         }
       }
-    }
+    },
+    dependencyListStub
   });
 
   sinon.stub(instance, 'getHandlerFilename').returns('handler.js');
-  sinon.stub(instance, 'getDependencies').returns([
-    path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
-    path.join('node_modules', 'brightspace-auth-validation', 'node_modules', 'jws', 'index.js'),
-  ]);
 
   instance.processFunction('a');
 
@@ -186,8 +204,8 @@ test('processFunction should include individually', t => {
   ]);
   t.deepEqual(convertSlashes(instance.serverless.service.functions.a.package.patterns), [
     '.something-else',
-    'node_modules/brightspace-auth-validation/index.js',
-    'node_modules/brightspace-auth-validation/node_modules/jws/index.js'
+    '../../node_modules/brightspace-auth-validation/index.js',
+    '../../node_modules/brightspace-auth-validation/node_modules/jws/index.js'
   ]);
 });
 
@@ -318,15 +336,15 @@ test('processFunction should handle different runtimes', t => {
       package: {
         individually: true,
         include: ['.something']
+      }
+    }, 
+    functions: {
+      a: {},
+      b: {
+        runtime: 'nodejs43'
       },
-      functions: {
-        a: {},
-        b: {
-          runtime: 'nodejs43'
-        },
-        c: {
-          runtime: 'nodejs62'
-        }
+      c: {
+        runtime: 'nodejs62'
       }
     }
   });
@@ -350,19 +368,20 @@ test('disables caching by default', t => {
   const instance = createTestInstance();
   const file = path.join(__dirname, 'fixtures', 'thing.js');
   const list1 = instance.getDependencies(file, []);
-  instance.checkedFiles.clear(); // clear would be called when through createDeploymentArtifacts
-
   const list2 = instance.getDependencies(file, []);
   t.deepEqual(list1, list2);
 });
 
 test('enables caching', t => {
-  const instance = createTestInstance({
-    service: { custom: { includeDependencies: { enableCaching: true } } }
+  const instance = createTestInstance({ 
+    serverless: {
+      service: { custom: { includeDependencies: { enableCaching: true } } }
+    }
   });
+  const cacheEnabled = instance.cacheEnabled;
+  t.true(cacheEnabled);
   const file = path.join(__dirname, 'fixtures', 'thing.js');
-  const list1 = instance.getDependencies(file, []);
-  instance.checkedFiles.clear();
-  const list2 = instance.getDependencies(file, []);
+  const list1 = instance.getDependencies(file, [], cacheEnabled);
+  const list2 = instance.getDependencies(file, [], cacheEnabled);
   t.true(list2.length < list1.length);
 });

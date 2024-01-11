@@ -2,6 +2,8 @@
 
 This is a Serverless plugin that should make your deployed functions smaller. It does this by excluding `node_modules` then individually adds each module file that your handler depends on.
 
+6.0.0 requires Node 18.18 and newer to function. Updated dependencies, fixed small bugs introduced in 5.1.0 version.
+
 5.1.0 introduces support for detecting dependencies of files included via package.patterns
 
 This is useful if you are dynamically importing a directory.

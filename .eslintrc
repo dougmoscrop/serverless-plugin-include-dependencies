@@ -9,3 +9,9 @@ extends:
 
 rules:
   no-console: 0
+  
+parserOptions:
+  ecmaVersion: 2020
+  sourceType: "module"
+  ecmaFeatures:
+    "js": true

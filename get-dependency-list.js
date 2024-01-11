@@ -2,7 +2,7 @@
 
 const path = require('path');
 
-const precinct = require('precinct');
+const { paperwork } = require('precinct');
 const resolve = require('resolve');
 const readPkgUp = require('read-pkg-up');
 const requirePackageName = require('require-package-name');
@@ -13,13 +13,12 @@ function ignoreMissing(dependency, optional, peerDependenciesMeta) {
     || peerDependenciesMeta && dependency in peerDependenciesMeta && peerDependenciesMeta[dependency].optional;
 }
 
-module.exports = function(filename, serverless, checkedFiles, cache) {
+module.exports = function(filename, serverless, cache) {
   const servicePath = serverless.config.servicePath;
   const modulePaths = new Set();
   const filePaths = new Set();
   const modulesToProcess = [];
   const localFilesToProcess = [filename];
-  if (!checkedFiles) checkedFiles = new Set();
 
   function handle(name, basedir, optionalDependencies, peerDependenciesMeta) {
     const moduleName = requirePackageName(name.replace(/\\/, '/'));
@@ -35,7 +34,6 @@ module.exports = function(filename, serverless, checkedFiles, cache) {
 
       if (pkg) {
         modulesToProcess.push(pkg);
-
         if (cache) {
           cache.add(cacheKey);
         }
@@ -70,15 +68,13 @@ module.exports = function(filename, serverless, checkedFiles, cache) {
   while (localFilesToProcess.length) {
     const currentLocalFile = localFilesToProcess.pop();
 
-    if (filePaths.has(currentLocalFile) || checkedFiles.has(currentLocalFile)) {
+    if (filePaths.has(currentLocalFile)) {
       continue;
-    }
-
+    }   
     filePaths.add(currentLocalFile);
-    checkedFiles.add(currentLocalFile);
-
-    precinct.paperwork(currentLocalFile, { includeCore: false }).forEach(dependency => {
+    paperwork(currentLocalFile, { includeCore: false }).forEach(dependency => {
       if (dependency.indexOf('.') === 0) {
+        filePaths.add(dependency);
         const abs = resolve.sync(dependency, {
           basedir: path.dirname(currentLocalFile)
         });
@@ -124,6 +120,5 @@ module.exports = function(filename, serverless, checkedFiles, cache) {
       filePaths.add(moduleFilePath);
     });
   });
-
   return Array.from(filePaths).map(file => file.replace(/\\/, '/'));
 };

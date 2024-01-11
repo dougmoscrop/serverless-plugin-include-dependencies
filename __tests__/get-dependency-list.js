@@ -129,9 +129,8 @@ test('caches lookups', (t) => {
   const fileName2 = path.join(__dirname, 'fixtures', 'redundancies-2.js');
 
   const cache = new Set();
-  const checkedFiles = new Set();
-  const list1 = getDependencyList(fileName, serverless, checkedFiles, cache);
-  const list2 = getDependencyList(fileName2, serverless, checkedFiles, cache);
+  const list1 = getDependencyList(fileName, serverless, cache);
+  const list2 = getDependencyList(fileName2, serverless, cache);
 
   t.true(list1.some(item => item.endsWith('local/named/index.js')));
   t.true(list1.some(item => item.endsWith('symlinked.js')));
