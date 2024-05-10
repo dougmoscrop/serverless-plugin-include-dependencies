@@ -134,7 +134,10 @@ module.exports = class IncludeDependencies {
   getHandlerFilename(handler) {
     const lastDotIndex = handler.lastIndexOf('.');
     const handlerPath = lastDotIndex !== -1 ? handler.slice(0, lastDotIndex) : 'index';
-    return require.resolve((path.join(this.serverless.config.servicePath, handlerPath)));
+
+    const path = this.getPluginOptions().handlerRoot || this.serverless.config.servicePath;
+
+    return require.resolve((path.join(path, handlerPath)));
   }
 
   getDependencies(fileName, patterns, useCache = false) {

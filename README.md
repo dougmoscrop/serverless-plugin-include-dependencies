@@ -74,6 +74,17 @@ custom:
   includeDependencies:
     enableCaching: true
 ```
+## Monorepo
+
+When building outputs to root directory in a monorepo for instance while using nest-cli, you end up with outputs in `root/dist/app-name`, 
+this is not how serverless-compose wants it. by default the `this.serverless.config.servicePath` will be the path of app you are building.
+Because of that this plugin will not find the handler, you can support this by adding the following
+
+```yaml
+custom:
+  includeDependencies:
+    handlerRoot: ../../
+```
 
 ## New In 2.0 - Exclusion Support
 
