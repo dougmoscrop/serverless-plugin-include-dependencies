@@ -263,6 +263,26 @@ test('getDependencies should handle exclude of a file within a dependency', t =>
   t.true(dependencies.some(p => p.match(/readable-stream\/LICENSE/)));
 });
 
+test('getDependencies should handle excludes of root node_modules', t => {
+  const dependencyListStubReturn = [
+    path.join('node_modules', 'brightspace-auth-validation', 'index.js'),
+    path.join('node_modules', 'some-other', 'index.js'),
+  ];
+
+  const dependencyListStub = getDependencyListStub(dependencyListStubReturn);
+  const instance = createTestInstance({ dependencyListStub });
+  const file = path.join(__dirname, 'fixtures', 'thing.js');
+  const dependencies = instance.getDependencies(file, [
+    '!../../node_modules/brightspace-auth-validation/*'
+  ]);
+
+  t.true(Array.isArray(dependencies));
+  t.true(dependencies.length > 0);
+  
+  t.false(dependencies.some(p => p.match(/brightspace-auth-validation\/index.js/)));
+  t.true(dependencies.some(p => p.match(/some-other\/index.js/)));
+});
+
 test('getDependencies should ignore excludes that do not start with node_modules', t => {
   const instance = createTestInstance();
   const file = path.join(__dirname, 'fixtures', 'thing.js');
