@@ -145,9 +145,7 @@ module.exports = class IncludeDependencies {
     const dependencies = getDependencyList(fileName, this.serverless, useCache && this.cache) || [];
     const relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
 
-    const exclusions = patterns.filter(p => {
-      return !(p.indexOf('!node_modules') !== 0 || p === '!node_modules' || p === '!node_modules/**');
-    });
+    const exclusions = patterns.filter(p => p.startsWith('!') && p.includes('node_modules'));
 
     if (exclusions.length > 0) {
       return micromatch(relativeDependencies, exclusions);
