@@ -33,6 +33,7 @@ module.exports = class IncludeDependencies {
     this.serverless = serverless;
     this.options = options;
     this.cache = new Set();
+    this.globalDependenciesCache = new Map();
 
     this.hooks = {
       'before:deploy:function:packageFunction': this.functionDeploy.bind(this),
@@ -53,7 +54,8 @@ module.exports = class IncludeDependencies {
   }
 
   addDependenciesForTarget(target, useCache = false) {
-    const filteredPatterns = this.getPatterns(target).filter(pattern => !pattern.startsWith('!') && !pattern.includes('node_modules'));
+    const patterns = this.getPatterns(target);
+    const filteredPatterns = patterns.filter(pattern => !pattern.startsWith('!') && !pattern.includes('node_modules'));
     const files = Array.from(new Set(filteredPatterns))
       .map(modulePath => glob.sync(modulePath, {
           nodir: true,
@@ -63,7 +65,7 @@ module.exports = class IncludeDependencies {
       ).flat().map(file => file.replaceAll('\\', '/'));
 
     files.forEach(fileName => {
-        const dependencies = this.getDependencies(fileName, target.package.patterns, useCache);
+        const dependencies = this.getDependencies(fileName, patterns, useCache);
         target.package.patterns = union(target.package.patterns, dependencies);
     });
   }
@@ -99,7 +101,7 @@ module.exports = class IncludeDependencies {
   }
 
   getPatterns(target) {
-    return target.package?.patterns || [];
+    return union(this.serverless.service.package?.patterns || [], target.package?.patterns || []);
   }
 
   getPluginOptions() {
@@ -115,7 +117,8 @@ module.exports = class IncludeDependencies {
     const individually = this.shouldPackageIndividually(functionObject);
     const enableCaching = !individually && this.getPluginOptions().enableCaching;
     const target = individually ? functionObject : service;
-    const dependencies = this.getDependencies(fileName, target.package.patterns, enableCaching && this.cache);
+    const patterns = this.getPatterns(target);
+    const dependencies = this.getDependencies(fileName, patterns, enableCaching && this.cache);
     target.package.patterns = union(target.package.patterns, dependencies);
 
     if (!individually) { return; }
@@ -141,9 +144,16 @@ module.exports = class IncludeDependencies {
   }
 
   getDependencies(fileName, patterns, useCache = false) {
-    const servicePath = this.serverless.config.servicePath;
-    const dependencies = getDependencyList(fileName, this.serverless, useCache && this.cache) || [];
-    const relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
+    let relativeDependencies;
+    if (this.globalDependenciesCache.has(fileName)) {
+      relativeDependencies = this.globalDependenciesCache.get(fileName);
+    } else {
+      const servicePath = this.serverless.config.servicePath;
+      const dependencies = getDependencyList(fileName, this.serverless, useCache && this.cache) || [];
+      relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
+
+      this.globalDependenciesCache.set(fileName, relativeDependencies);
+    }
 
     const exclusions = patterns.filter(p => {
       return !(p.indexOf('!node_modules') !== 0 || p === '!node_modules' || p === '!node_modules/**');
