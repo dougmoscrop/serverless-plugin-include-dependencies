@@ -33,6 +33,7 @@ module.exports = class IncludeDependencies {
     this.serverless = serverless;
     this.options = options;
     this.cache = new Set();
+    this.globalDependenciesCache = new Map();
 
     this.hooks = {
       'before:deploy:function:packageFunction': this.functionDeploy.bind(this),
@@ -141,9 +142,16 @@ module.exports = class IncludeDependencies {
   }
 
   getDependencies(fileName, patterns, useCache = false) {
-    const servicePath = this.serverless.config.servicePath;
-    const dependencies = getDependencyList(fileName, this.serverless, useCache && this.cache) || [];
-    const relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
+    let relativeDependencies;
+    if (this.globalDependenciesCache.has(fileName)) {
+      relativeDependencies = this.globalDependenciesCache.get(fileName);
+    } else {
+      const servicePath = this.serverless.config.servicePath;
+      const dependencies = getDependencyList(fileName, this.serverless, useCache && this.cache) || [];
+      relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
+
+      this.globalDependenciesCache.set(fileName, relativeDependencies);
+    }
 
     const exclusions = patterns.filter(p => {
       return !(p.indexOf('!node_modules') !== 0 || p === '!node_modules' || p === '!node_modules/**');
