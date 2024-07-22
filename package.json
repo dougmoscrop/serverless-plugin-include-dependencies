@@ -9,7 +9,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dougmoscrop/serverless-plugin-include-dependencies"
+    "url": "git+https://github.com/dougmoscrop/serverless-plugin-include-dependencies.git"
   },
   "keywords": [
     "serverless",
