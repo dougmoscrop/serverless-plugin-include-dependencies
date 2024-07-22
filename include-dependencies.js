@@ -114,8 +114,11 @@ module.exports = class IncludeDependencies {
     const fileName = this.getHandlerFilename(functionObject.handler);
     const individually = this.shouldPackageIndividually(functionObject);
     const enableCaching = !individually && this.getPluginOptions().enableCaching;
+    
     const target = individually ? functionObject : service;
-    const dependencies = this.getDependencies(fileName, target.package.patterns, enableCaching && this.cache);
+    const patterns = individually ? union(service.package.patterns || [], target.package.patterns || []) : target.package.patterns || []
+
+    const dependencies = this.getDependencies(fileName, patterns, enableCaching && this.cache);
     target.package.patterns = union(target.package.patterns, dependencies);
 
     if (!individually) { return; }

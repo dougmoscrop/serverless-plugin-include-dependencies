@@ -2,6 +2,10 @@
 
 This is a Serverless plugin that should make your deployed functions smaller. It does this by excluding `node_modules` then individually adds each module file that your handler depends on.
 
+6.1.1
+
+Fix a bug when using package individually with service-level patterns.
+
 6.1.0 Supports 'handlerRoot' as per https://github.com/dougmoscrop/serverless-plugin-include-dependencies/pull/96
 
 6.0.0 requires Node 18.18 and newer to function. Updated dependencies, fixed small bugs introduced in 5.1.0 version.
