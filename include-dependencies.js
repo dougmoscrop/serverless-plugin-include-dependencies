@@ -93,7 +93,7 @@ module.exports = class IncludeDependencies {
     const functionObject = service.functions[functionName];
     const runtime = this.getFunctionRuntime(functionObject);
 
-    if (/(provided|nodejs)+/.test(runtime)) {
+    if (/(provided|nodejs)+/.test(runtime) && functionObject.handler) {
       this.processNodeFunction(functionObject);
     }
   }
