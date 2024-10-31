@@ -92,6 +92,21 @@ custom:
     handlerRoot: ../../
 ```
 
+## Suppress "missing optional dependency" warning
+When building you may have missing optional dependencies that are not installed. In this case you will receive messages like:
+
+```
+Serverless: [serverless-plugin-include-dependencies]: WARNING missing optional dependency: aws-crt
+```
+
+To suppress these messages, add a list of the optional dependencies to ignore
+
+```yaml
+custom:
+  ignoreOptionalDependenciesList:
+    - aws-crt
+```
+
 ## New In 2.0 - Exclusion Support
 
 Rather than including module folders (e.g. `node_modules/foo/**`, it now includes a list of actual files (e.g. `node_modules/foo/package.json`, `node_modules/foo/index.js`) and *uses the serverless package patterns* to filter these files. Patterns *must* start with `!node_modules` to be considered by this plugin.
