@@ -13,7 +13,7 @@ function ignoreMissing(dependency, optional, peerDependenciesMeta) {
     || peerDependenciesMeta && dependency in peerDependenciesMeta && peerDependenciesMeta[dependency].optional;
 }
 
-module.exports = function(filename, serverless, cache) {
+module.exports = function(filename, serverless, ignoreOptionalDependenciesList = [], cache) {
   const servicePath = serverless.config.servicePath;
   const modulePaths = new Set();
   const filePaths = new Set();
@@ -44,6 +44,10 @@ module.exports = function(filename, serverless, cache) {
     } catch (e) {
       if (e.code === 'MODULE_NOT_FOUND') {
         if (ignoreMissing(moduleName, optionalDependencies, peerDependenciesMeta)) {
+          if (ignoreOptionalDependenciesList.includes(moduleName)) {
+            return null;
+          }
+
           serverless.cli.log(`[serverless-plugin-include-dependencies]: WARNING missing optional dependency: ${moduleName}`);
           return null;
         }

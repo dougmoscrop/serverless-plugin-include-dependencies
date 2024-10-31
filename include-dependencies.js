@@ -145,7 +145,8 @@ module.exports = class IncludeDependencies {
 
   getDependencies(fileName, patterns, useCache = false) {
     const servicePath = this.serverless.config.servicePath;
-    const dependencies = getDependencyList(fileName, this.serverless, useCache && this.cache) || [];
+    const ignoreOptionalDependenciesList = this.getPluginOptions().ignoreOptionalDependenciesList || [];
+    const dependencies = getDependencyList(fileName, this.serverless, ignoreOptionalDependenciesList, useCache && this.cache) || [];
     const relativeDependencies = dependencies.map(p => path.relative(servicePath, p));
 
     const exclusions = patterns.filter(p => p.startsWith('!') && p.includes('node_modules'));
